@@ -1,94 +1,53 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
+/* Futuristic 2060 Design System */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 3%; /* Deep space black */
+    --foreground: 180 100% 90%; /* Cyan white */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 220 20% 8%; /* Dark neural gray */
+    --card-foreground: 180 100% 85%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 220 25% 6%;
+    --popover-foreground: 180 100% 90%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 180 100% 50%; /* Electric cyan */
+    --primary-foreground: 220 30% 10%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 240 100% 60%; /* Neural blue */
+    --secondary-foreground: 180 100% 95%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 180 50% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 280 100% 70%; /* Quantum purple */
+    --accent-foreground: 220 30% 10%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 100% 60%; /* Danger red */
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 180 50% 25%;
+    --input: 220 20% 12%;
+    --ring: 180 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.8rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Custom futuristic variables */
+    --neon: 180 100% 50%;
+    --quantum: 280 100% 70%;
+    --neural: 240 100% 60%;
+    --hologram: 160 100% 45%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 0 0% 2%;
+    --foreground: 180 100% 95%;
   }
 }
 
@@ -98,6 +57,163 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-['Exo_2'];
+    background: linear-gradient(135deg, #000511 0%, #001122 50%, #000a1a 100%);
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* Neural network background pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(128, 0, 255, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 40% 60%, rgba(0, 128, 255, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -2;
+  }
+
+  /* Animated particles */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(1px 1px at 20px 30px, rgba(0, 255, 255, 0.3), transparent),
+      radial-gradient(1px 1px at 40px 70px, rgba(128, 0, 255, 0.2), transparent),
+      radial-gradient(1px 1px at 90px 40px, rgba(0, 128, 255, 0.2), transparent);
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    animation: particle-float 20s linear infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-['Orbitron'] font-bold;
+  }
+}
+
+@layer components {
+  /* Holographic card effect */
+  .holo-card {
+    @apply relative bg-card/40 backdrop-blur-lg border border-primary/30 rounded-xl;
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(0, 128, 255, 0.05) 100%);
+    box-shadow: 
+      0 8px 32px rgba(0, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .holo-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(45deg, rgba(0, 255, 255, 0.5), rgba(128, 0, 255, 0.3), rgba(0, 128, 255, 0.4));
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: subtract;
+    z-index: -1;
+  }
+
+  /* Neural button styling */
+  .neural-btn {
+    @apply relative overflow-hidden bg-primary/20 border border-primary/50 text-primary font-semibold px-6 py-3 rounded-lg;
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(0, 128, 255, 0.15) 100%);
+    transition: all 0.3s ease;
+  }
+
+  .neural-btn:hover {
+    @apply bg-primary/30 border-primary shadow-lg;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .neural-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s;
+  }
+
+  .neural-btn:hover::before {
+    left: 100%;
+  }
+
+  /* Quantum input styling */
+  .quantum-input {
+    @apply bg-input/50 border border-primary/30 rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground;
+    background: linear-gradient(135deg, rgba(0, 40, 80, 0.3) 0%, rgba(0, 20, 40, 0.5) 100%);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+
+  .quantum-input:focus {
+    @apply outline-none border-primary ring-2 ring-primary/30;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+  }
+
+  /* Glowing text effect */
+  .glow-text {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+  }
+
+  /* Pulsing animation */
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite alternate;
+  }
+}
+
+@layer utilities {
+  /* Custom animations */
+  @keyframes particle-float {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+    100% { transform: translateY(0px) rotate(360deg); }
+  }
+
+  @keyframes pulse-glow {
+    from {
+      text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+    }
+    to {
+      text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+    }
+  }
+
+  @keyframes neural-scan {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+
+  @keyframes quantum-shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .animate-neural-scan {
+    animation: neural-scan 3s infinite;
+  }
+
+  .animate-quantum-shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.4) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: quantum-shimmer 2s infinite;
   }
 }
