@@ -39,9 +39,23 @@ const Auth = () => {
           setLoading(false);
           return;
         }
+        
+        // Add basic username validation
+        if (username.length < 3) {
+          setError('اسم المستخدم يجب أن يكون 3 أحرف على الأقل');
+          setLoading(false);
+          return;
+        }
+        
         const { error } = await signUp(email, password, username);
         if (error) {
-          setError(error.message);
+          if (error.message.includes('already exists') || error.message.includes('موجود بالفعل')) {
+            setError('اسم المستخدم موجود بالفعل، يرجى اختيار اسم آخر');
+          } else if (error.message.includes('User already registered')) {
+            setError('البريد الإلكتروني مُسجل بالفعل');
+          } else {
+            setError(error.message);
+          }
         } else {
           setError('تم إرسال رابط التفعيل إلى بريدك الإلكتروني');
         }
@@ -79,6 +93,7 @@ const Auth = () => {
                     className="quantum-input w-full"
                     placeholder="أدخل اسم المستخدم"
                     required={!isLogin}
+                    minLength={3}
                   />
                 </div>
               )}
@@ -108,6 +123,7 @@ const Auth = () => {
                   className="quantum-input w-full"
                   placeholder="أدخل كلمة المرور"
                   required
+                  minLength={6}
                 />
               </div>
 

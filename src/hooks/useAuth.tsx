@@ -40,6 +40,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (email: string, password: string, username: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
+    // First check if username already exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username)
+      .single();
+
+    if (existingProfile) {
+      return { error: { message: 'اسم المستخدم موجود بالفعل' } };
+    }
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
