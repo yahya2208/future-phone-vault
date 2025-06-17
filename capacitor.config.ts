@@ -2,7 +2,7 @@
 import { CapacitorConfig } from '@capacitor/core';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.94dee515c3a34ac9b3735bd09d19d8a1',
+  appId: 'com.lovable.app',
   appName: 'future-phone-vault',
   webDir: 'dist',
   bundledWebRuntime: false,
