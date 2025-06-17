@@ -1,11 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 import FuturisticHeader from '@/components/FuturisticHeader';
 import TransactionForm from '@/components/TransactionForm';
 import TransactionHistory from '@/components/TransactionHistory';
 import DashboardStats from '@/components/DashboardStats';
+import FooterLinks from '@/components/FooterLinks';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Transaction {
@@ -22,6 +23,7 @@ interface Transaction {
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
@@ -85,7 +87,6 @@ const Index = () => {
       return;
     }
 
-    // Refresh transactions after saving
     fetchTransactions();
   };
 
@@ -118,7 +119,7 @@ const Index = () => {
   ).length;
 
   return (
-    <div className="min-h-screen" dir="rtl">
+    <div className="min-h-screen" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <FuturisticHeader />
         
@@ -133,13 +134,7 @@ const Index = () => {
           <TransactionHistory transactions={transactions} />
         </div>
         
-        {/* Neural footer */}
-        <footer className="mt-16 text-center">
-          <div className="h-px bg-gradient-to-r from-transparent via-primary to-transparent mb-4"></div>
-          <p className="text-muted-foreground text-sm">
-            نظام إدارة غزة سايفر v2060.1 • الواجهة العصبية نشطة
-          </p>
-        </footer>
+        <FooterLinks />
       </div>
     </div>
   );

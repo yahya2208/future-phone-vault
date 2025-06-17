@@ -6,6 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
+import CameraCapture from './CameraCapture';
+import SignaturePad from './SignaturePad';
 
 interface TransactionData {
   sellerName: string;
@@ -14,6 +17,8 @@ interface TransactionData {
   brand: string;
   imei: string;
   purchaseDate: string;
+  buyerIdPhoto?: string;
+  signature?: string;
 }
 
 const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: TransactionData) => void }) => {
@@ -27,6 +32,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
   });
 
   const { toast } = useToast();
+  const { t, language } = useLanguage();
 
   const phonebrands = [
     'Apple', 'Samsung', 'Google', 'OnePlus', 'Xiaomi', 'Huawei', 
@@ -83,108 +89,122 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
   };
 
   return (
-    <Card className="holo-card">
-      <CardHeader>
-        <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl">
-          New Transaction Portal
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="seller" className="text-primary text-sm font-semibold">
-                Seller Name
-              </Label>
-              <Input
-                id="seller"
-                className="quantum-input"
-                placeholder="Enter seller name"
-                value={formData.sellerName}
-                onChange={(e) => handleInputChange('sellerName', e.target.value)}
-              />
+    <div className="space-y-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <Card className="holo-card">
+        <CardHeader>
+          <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl">
+            {t('newTransactionPortal')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="seller" className="text-primary text-sm font-semibold">
+                  {t('sellerName')}
+                </Label>
+                <Input
+                  id="seller"
+                  className="quantum-input"
+                  placeholder={`Enter ${t('sellerName').toLowerCase()}`}
+                  value={formData.sellerName}
+                  onChange={(e) => handleInputChange('sellerName', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="buyer" className="text-primary text-sm font-semibold">
+                  {t('buyerName')}
+                </Label>
+                <Input
+                  id="buyer"
+                  className="quantum-input"
+                  placeholder={`Enter ${t('buyerName').toLowerCase()}`}
+                  value={formData.buyerName}
+                  onChange={(e) => handleInputChange('buyerName', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="brand" className="text-primary text-sm font-semibold">
+                  {t('phoneBrand')}
+                </Label>
+                <Select onValueChange={(value) => handleInputChange('brand', value)}>
+                  <SelectTrigger className="quantum-input">
+                    <SelectValue placeholder="Select brand" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-primary/30">
+                    {phonebrands.map((brand) => (
+                      <SelectItem key={brand} value={brand} className="text-foreground hover:bg-primary/20">
+                        {brand}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="model" className="text-primary text-sm font-semibold">
+                  {t('phoneModel')}
+                </Label>
+                <Input
+                  id="model"
+                  className="quantum-input"
+                  placeholder="e.g., iPhone 15 Pro"
+                  value={formData.phoneModel}
+                  onChange={(e) => handleInputChange('phoneModel', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="imei" className="text-primary text-sm font-semibold">
+                  {t('imei')}
+                </Label>
+                <Input
+                  id="imei"
+                  className="quantum-input"
+                  placeholder="Enter 15-digit IMEI"
+                  value={formData.imei}
+                  onChange={(e) => handleInputChange('imei', e.target.value.replace(/\D/g, '').slice(0, 15))}
+                  maxLength={15}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="date" className="text-primary text-sm font-semibold">
+                  {t('purchaseDate')}
+                </Label>
+                <Input
+                  id="date"
+                  type="date"
+                  className="quantum-input"
+                  value={formData.purchaseDate}
+                  onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="buyer" className="text-primary text-sm font-semibold">
-                Buyer Name
-              </Label>
-              <Input
-                id="buyer"
-                className="quantum-input"
-                placeholder="Enter buyer name"
-                value={formData.buyerName}
-                onChange={(e) => handleInputChange('buyerName', e.target.value)}
-              />
+            <div className="flex justify-center pt-6">
+              <Button type="submit" className="neural-btn w-full md:w-auto">
+                <span className="font-['Orbitron'] font-bold">{t('processTransaction')}</span>
+              </Button>
             </div>
+          </form>
+        </CardContent>
+      </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="brand" className="text-primary text-sm font-semibold">
-                Phone Brand
-              </Label>
-              <Select onValueChange={(value) => handleInputChange('brand', value)}>
-                <SelectTrigger className="quantum-input">
-                  <SelectValue placeholder="Select brand" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-primary/30">
-                  {phonebrands.map((brand) => (
-                    <SelectItem key={brand} value={brand} className="text-foreground hover:bg-primary/20">
-                      {brand}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="model" className="text-primary text-sm font-semibold">
-                Phone Model
-              </Label>
-              <Input
-                id="model"
-                className="quantum-input"
-                placeholder="e.g., iPhone 15 Pro"
-                value={formData.phoneModel}
-                onChange={(e) => handleInputChange('phoneModel', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="imei" className="text-primary text-sm font-semibold">
-                IMEI (15 digits)
-              </Label>
-              <Input
-                id="imei"
-                className="quantum-input"
-                placeholder="Enter 15-digit IMEI"
-                value={formData.imei}
-                onChange={(e) => handleInputChange('imei', e.target.value.replace(/\D/g, '').slice(0, 15))}
-                maxLength={15}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="date" className="text-primary text-sm font-semibold">
-                Purchase Date
-              </Label>
-              <Input
-                id="date"
-                type="date"
-                className="quantum-input"
-                value={formData.purchaseDate}
-                onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-center pt-6">
-            <Button type="submit" className="neural-btn w-full md:w-auto">
-              <span className="font-['Orbitron'] font-bold">PROCESS TRANSACTION</span>
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      {/* Camera and Signature Components */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CameraCapture
+          title={t('buyerIdPhoto')}
+          onPhotoCapture={(photo) => handleInputChange('buyerIdPhoto', photo)}
+        />
+        
+        <SignaturePad
+          onSignatureCapture={(signature) => handleInputChange('signature', signature)}
+        />
+      </div>
+    </div>
   );
 };
 
