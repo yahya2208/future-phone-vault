@@ -19,17 +19,17 @@ interface TransactionHistoryProps {
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions }) => {
   return (
-    <Card className="holo-card">
+    <Card className="holo-card" dir="rtl">
       <CardHeader>
         <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl">
-          Transaction History
+          سجل المعاملات
         </CardTitle>
       </CardHeader>
       <CardContent>
         {transactions.length === 0 ? (
           <div className="text-center py-8">
-            <div className="text-muted-foreground text-lg">No transactions recorded</div>
-            <div className="text-accent text-sm mt-2">Start by adding your first transaction above</div>
+            <div className="text-muted-foreground text-lg">لا توجد معاملات مسجلة</div>
+            <div className="text-accent text-sm mt-2">ابدأ بإضافة معاملتك الأولى أعلاه</div>
           </div>
         ) : (
           <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -40,15 +40,15 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions })
               >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <div className="text-primary text-sm font-semibold">Buyer</div>
+                    <div className="text-primary text-sm font-semibold">المشتري</div>
                     <div className="text-foreground">{transaction.buyerName}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      from {transaction.sellerName}
+                      من {transaction.sellerName}
                     </div>
                   </div>
                   
                   <div>
-                    <div className="text-primary text-sm font-semibold">Device</div>
+                    <div className="text-primary text-sm font-semibold">الجهاز</div>
                     <div className="text-foreground">{transaction.brand} {transaction.phoneModel}</div>
                     <div className="text-xs text-accent mt-1">
                       IMEI: {transaction.imei.slice(0, 8)}...
@@ -56,10 +56,10 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions })
                   </div>
                   
                   <div>
-                    <div className="text-primary text-sm font-semibold">Date</div>
+                    <div className="text-primary text-sm font-semibold">التاريخ</div>
                     <div className="text-foreground">{transaction.purchaseDate}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {new Date(transaction.timestamp).toLocaleTimeString()}
+                      {new Date(transaction.timestamp).toLocaleTimeString('ar-SA')}
                     </div>
                   </div>
                 </div>

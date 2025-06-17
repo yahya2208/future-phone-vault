@@ -10,45 +10,45 @@ interface StatsProps {
 
 const DashboardStats: React.FC<StatsProps> = ({ totalTransactions, topBrand, recentTransactions }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" dir="rtl">
       <Card className="holo-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-primary">Total Transactions</CardTitle>
+          <CardTitle className="text-sm font-medium text-primary">إجمالي المعاملات</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-3xl font-bold text-primary glow-text font-['Orbitron']">
             {totalTransactions}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            Devices processed
+            الأجهزة المعالجة
           </div>
         </CardContent>
       </Card>
 
       <Card className="holo-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-accent">Top Brand</CardTitle>
+          <CardTitle className="text-sm font-medium text-accent">العلامة التجارية الأكثر شيوعاً</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-3xl font-bold text-accent glow-text font-['Orbitron']">
-            {topBrand || 'N/A'}
+            {topBrand || 'غير متوفر'}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            Most popular
+            الأكثر شعبية
           </div>
         </CardContent>
       </Card>
 
       <Card className="holo-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-secondary">Today</CardTitle>
+          <CardTitle className="text-sm font-medium text-secondary">اليوم</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-3xl font-bold text-secondary glow-text font-['Orbitron']">
             {recentTransactions}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            New transactions
+            معاملات جديدة
           </div>
         </CardContent>
       </Card>
