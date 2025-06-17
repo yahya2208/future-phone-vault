@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/core';
 
 const config: CapacitorConfig = {
   appId: 'com.lovable.app',
-  appName: 'future-phone-vault',
+  appName: 'Gaza Saver',
   webDir: 'dist',
   bundledWebRuntime: false,
   server: {
@@ -13,9 +13,24 @@ const config: CapacitorConfig = {
   plugins: {
     Camera: {
       permissions: {
-        camera: 'Camera access is required to take photos of buyer IDs.'
+        camera: 'تطلب الكاميرا للتقاط صور هوية المشتري.',
+        photos: 'تطلب الوصول للصور لحفظ الصور المُلتقطة.'
       }
+    },
+    SplashScreen: {
+      launchShowDuration: 2000,
+      backgroundColor: "#1a1a2e",
+      showSpinner: false
     }
+  },
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: true
+  },
+  ios: {
+    contentInset: 'automatic',
+    scrollEnabled: true
   }
 };
 

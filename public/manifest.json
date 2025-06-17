@@ -1,0 +1,26 @@
+
+{
+  "name": "Gaza Saver - غزة سايفر",
+  "short_name": "Gaza Saver",
+  "description": "تطبيق غزة سايفر لإدارة معاملات الهواتف المحمولة",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#00d4aa",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/lovable-uploads/e90aa397-3ed7-4ea1-beac-bf1e62721300.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/lovable-uploads/e90aa397-3ed7-4ea1-beac-bf1e62721300.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "lang": "ar",
+  "dir": "rtl"
+}
