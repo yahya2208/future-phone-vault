@@ -7,6 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from '@/components/ui/alert-dialog';
 import CameraCapture from './CameraCapture';
 import SignaturePad from './SignaturePad';
 
@@ -33,6 +45,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
 
   const { toast } = useToast();
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
 
   const phonebrands = [
     'Apple', 'Samsung', 'Google', 'OnePlus', 'Xiaomi', 'Huawei', 
@@ -47,15 +60,13 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
     return /^\d{15}$/.test(imei);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleConfirmedSubmit = () => {
     // Validation
     if (!formData.sellerName || !formData.buyerName || !formData.phoneModel || 
         !formData.brand || !formData.imei || !formData.purchaseDate) {
       toast({
-        title: "Validation Error",
-        description: "All fields are required",
+        title: "خطأ في التحقق",
+        description: "جميع الحقول مطلوبة",
         variant: "destructive"
       });
       return;
@@ -63,8 +74,17 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
 
     if (!validateIMEI(formData.imei)) {
       toast({
-        title: "Invalid IMEI",
-        description: "IMEI must be exactly 15 digits",
+        title: "رقم IMEI غير صحيح",
+        description: "يجب أن يكون رقم IMEI مكوناً من 15 رقماً بالضبط",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.signature) {
+      toast({
+        title: "التوقيع مطلوب",
+        description: "يرجى إضافة توقيعك لإتمام المعاملة",
         variant: "destructive"
       });
       return;
@@ -73,8 +93,8 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
     onTransactionSave(formData);
     
     toast({
-      title: "Transaction Saved",
-      description: "Phone transaction recorded successfully",
+      title: "تم حفظ المعاملة",
+      description: "تم تسجيل معاملة الهاتف بنجاح",
     });
 
     // Reset form
@@ -88,16 +108,51 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
     });
   };
 
+  const handleIdPhotoCapture = async (photo: string) => {
+    handleInputChange('buyerIdPhoto', photo);
+    
+    // إجراء OCR على الصورة
+    try {
+      const response = await fetch('/api/ocr-process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageData: photo }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.name && result.name.trim()) {
+          handleInputChange('buyerName', result.name.trim());
+          toast({
+            title: "تم استخراج المعلومات",
+            description: "تم ملء اسم المشتري تلقائياً من بطاقة الهوية",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('خطأ في معالجة OCR:', error);
+    }
+  };
+
   return (
     <div className="space-y-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <Card className="holo-card">
         <CardHeader>
-          <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl">
-            {t('newTransactionPortal')}
+          <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl flex justify-between items-center">
+            <span>{t('newTransactionPortal')}</span>
+            <Button 
+              onClick={() => navigate('/transactions')}
+              variant="outline"
+              className="text-sm"
+            >
+              عرض المعاملات
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="seller" className="text-primary text-sm font-semibold">
@@ -184,26 +239,44 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
               </div>
             </div>
 
-            <div className="flex justify-center pt-6">
-              <Button type="submit" className="neural-btn w-full md:w-auto">
-                <span className="font-['Orbitron'] font-bold">{t('processTransaction')}</span>
-              </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CameraCapture
+                title={t('buyerIdPhoto')}
+                onPhotoCapture={handleIdPhotoCapture}
+              />
+              
+              <SignaturePad
+                onSignatureCapture={(signature) => handleInputChange('signature', signature)}
+              />
             </div>
-          </form>
+
+            <div className="flex justify-center pt-6">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button className="neural-btn w-full md:w-auto">
+                    <span className="font-['Orbitron'] font-bold">{t('processTransaction')}</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-primary">تأكيد المعاملة</AlertDialogTitle>
+                    <AlertDialogDescription className="text-foreground">
+                      تأكد من صحة جميع المعلومات المدخلة. لن تتمكن من تعديل هذه المعاملة بعد حفظها.
+                      هل أنت متأكد من المتابعة؟
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleConfirmedSubmit}>
+                      تأكيد المعاملة
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Camera and Signature Components */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <CameraCapture
-          title={t('buyerIdPhoto')}
-          onPhotoCapture={(photo) => handleInputChange('buyerIdPhoto', photo)}
-        />
-        
-        <SignaturePad
-          onSignatureCapture={(signature) => handleInputChange('signature', signature)}
-        />
-      </div>
     </div>
   );
 };

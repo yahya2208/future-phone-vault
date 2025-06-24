@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import FuturisticHeader from '@/components/FuturisticHeader';
 import TransactionForm from '@/components/TransactionForm';
-import TransactionHistory from '@/components/TransactionHistory';
 import DashboardStats from '@/components/DashboardStats';
 import FooterLinks from '@/components/FooterLinks';
 import { supabase } from '@/integrations/supabase/client';
@@ -131,7 +131,6 @@ const Index = () => {
         
         <div className="space-y-8">
           <TransactionForm onTransactionSave={handleTransactionSave} />
-          <TransactionHistory transactions={transactions} />
         </div>
         
         <FooterLinks />

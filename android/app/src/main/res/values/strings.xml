@@ -1,7 +1,7 @@
 
 <resources>
-    <string name="app_name">Gaza Saver</string>
-    <string name="title_activity_main">غزة سايفر</string>
+    <string name="app_name">Gaza saver</string>
+    <string name="title_activity_main">Gaza saver</string>
     <string name="package_name">com.lovable.app</string>
     <string name="custom_url_scheme">com.lovable.app</string>
 </resources>

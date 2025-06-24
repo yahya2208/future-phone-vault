@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera as CameraIcon } from 'lucide-react';
+import { Camera as CameraIcon, Upload } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Camera } from '@capacitor/camera';
 import { CameraResultType, CameraSource } from '@capacitor/camera';
@@ -58,23 +58,58 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onPhotoCapture, title }) 
     }
   };
 
+  const selectFromGallery = async () => {
+    setIsLoading(true);
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Photos,
+        width: 800,
+        height: 600
+      });
+
+      if (image.dataUrl) {
+        setCapturedPhoto(image.dataUrl);
+        onPhotoCapture(image.dataUrl);
+      }
+    } catch (error) {
+      console.error('خطأ في اختيار الصورة:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Card className="holo-card">
       <CardHeader>
         <CardTitle className="text-primary glow-text font-['Orbitron'] text-lg flex items-center gap-2">
           <CameraIcon size={20} />
-          {title}
+          {title} *
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!capturedPhoto && (
-          <Button 
-            onClick={takePicture}
-            disabled={isLoading}
-            className="neural-btn w-full"
-          >
-            {isLoading ? 'جاري التحميل...' : t('takePhoto')}
-          </Button>
+          <div className="grid grid-cols-1 gap-2">
+            <Button 
+              onClick={takePicture}
+              disabled={isLoading}
+              className="neural-btn w-full"
+            >
+              <CameraIcon size={16} className="mr-2" />
+              {isLoading ? 'جاري التحميل...' : t('takePhoto')}
+            </Button>
+            <Button 
+              onClick={selectFromGallery}
+              disabled={isLoading}
+              variant="outline"
+              className="w-full"
+            >
+              <Upload size={16} className="mr-2" />
+              اختيار من المعرض
+            </Button>
+          </div>
         )}
         
         {capturedPhoto && (
@@ -84,16 +119,26 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onPhotoCapture, title }) 
               alt="صورة ملتقطة" 
               className="w-full h-48 object-cover rounded-lg border border-primary/30"
             />
-            <Button 
-              onClick={() => {
-                setCapturedPhoto(null);
-                takePicture();
-              }}
-              variant="outline"
-              className="w-full"
-            >
-              إعادة التقاط الصورة
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                onClick={takePicture}
+                variant="outline"
+                className="w-full"
+                disabled={isLoading}
+              >
+                <CameraIcon size={16} className="mr-2" />
+                إعادة التقاط
+              </Button>
+              <Button 
+                onClick={selectFromGallery}
+                variant="outline"
+                className="w-full"
+                disabled={isLoading}
+              >
+                <Upload size={16} className="mr-2" />
+                تغيير الصورة
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>
