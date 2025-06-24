@@ -127,7 +127,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
     try {
       // حفظ المعاملة أولاً
       const transactionId = `TXN-${Date.now()}`;
-      await onTransactionSave({ ...formData, transactionId });
+      await onTransactionSave(formData);
       
       // إرسال الإيميلات إذا كان مطلوباً
       if (sendEmails && (formData.sellerEmail || formData.buyerEmail)) {
@@ -361,7 +361,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
                 <Checkbox
                   id="sendEmails"
                   checked={sendEmails}
-                  onCheckedChange={setSendEmails}
+                  onCheckedChange={(checked) => setSendEmails(checked === true)}
                 />
                 <Label htmlFor="sendEmails" className="text-sm">
                   إرسال إيصال المعاملة عبر الإيميل (اختياري)

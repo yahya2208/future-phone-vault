@@ -36,37 +36,52 @@ export type Database = {
       transactions: {
         Row: {
           brand: string
+          buyer_email: string | null
+          buyer_id_photo: string | null
           buyer_name: string
           created_at: string
           id: string
           imei: string
           phone_model: string
           purchase_date: string
+          rating: number | null
+          seller_email: string | null
           seller_name: string
+          signature: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           brand: string
+          buyer_email?: string | null
+          buyer_id_photo?: string | null
           buyer_name: string
           created_at?: string
           id?: string
           imei: string
           phone_model: string
           purchase_date: string
+          rating?: number | null
+          seller_email?: string | null
           seller_name: string
+          signature?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           brand?: string
+          buyer_email?: string | null
+          buyer_id_photo?: string | null
           buyer_name?: string
           created_at?: string
           id?: string
           imei?: string
           phone_model?: string
           purchase_date?: string
+          rating?: number | null
+          seller_email?: string | null
           seller_name?: string
+          signature?: string | null
           updated_at?: string
           user_id?: string
         }
