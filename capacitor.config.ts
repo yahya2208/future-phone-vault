@@ -1,36 +1,28 @@
-
-import { CapacitorConfig } from '@capacitor/core';
+import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.lovable.app',
-  appName: 'Gaza Saver',
+  appName: 'Gaza saver',
   webDir: 'dist',
-  bundledWebRuntime: false,
   server: {
-    url: 'https://94dee515-c3a3-4ac9-b373-5bd09d19d8a1.lovableproject.com?forceHideBadge=true',
+    androidScheme: 'https',
+    allowNavigation: [],
     cleartext: true
-  },
-  plugins: {
-    Camera: {
-      permissions: {
-        camera: 'تطلب الكاميرا للتقاط صور هوية المشتري.',
-        photos: 'تطلب الوصول للصور لحفظ الصور المُلتقطة.'
-      }
-    },
-    SplashScreen: {
-      launchShowDuration: 2000,
-      backgroundColor: "#1a1a2e",
-      showSpinner: false
-    }
   },
   android: {
     allowMixedContent: true,
-    captureInput: true,
-    webContentsDebuggingEnabled: false
+    webContentsDebuggingEnabled: true,
+    buildOptions: {
+      keystorePath: '',
+      keystoreAlias: ''
+    }
   },
-  ios: {
-    contentInset: 'automatic',
-    scrollEnabled: true
+  plugins: {
+    Keyboard: {
+      resize: 'none',
+      style: 'dark',
+      resizeOnFullScreen: false
+    }
   }
 };
 

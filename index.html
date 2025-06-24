@@ -1,28 +1,43 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="/lovable-uploads/e90aa397-3ed7-4ea1-beac-bf1e62721300.png" type="image/png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gaza Saver - غزة سايفر</title>
-    <meta name="description" content="تطبيق غزة سايفر لإدارة معاملات الهواتف المحمولة" />
-    
-    <!-- أيقونات التطبيق -->
-    <link rel="apple-touch-icon" href="/lovable-uploads/e90aa397-3ed7-4ea1-beac-bf1e62721300.png">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Gaza Saver">
-    
-    <!-- Android -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#1a1a2e">
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
-  </head>
-  <body>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src *; img-src 'self' data: content:;">
+    <meta name="theme-color" content="#000000">
+    <title>Future Phone Vault</title>
+    <link rel="stylesheet" href="/src/index.css">
+    <style>
+        html, body, #root {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: pan-x pan-y;
+            -ms-touch-action: pan-x pan-y;
+            -webkit-tap-highlight-color: transparent;
+        }
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        input, textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+    </style>
+</head>
+<body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-  </body>
+</body>
 </html>
