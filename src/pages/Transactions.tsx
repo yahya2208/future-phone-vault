@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft } from 'lucide-react';
+import SearchTransactions, { SearchFilters } from '@/components/SearchTransactions';
+import ExportTransactions from '@/components/ExportTransactions';
 
 interface Transaction {
   id: string;
@@ -17,6 +19,7 @@ interface Transaction {
   imei: string;
   purchaseDate: string;
   timestamp: Date;
+  rating?: number;
 }
 
 const Transactions = () => {
@@ -24,6 +27,7 @@ const Transactions = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -60,10 +64,50 @@ const Transactions = () => {
         brand: t.brand,
         imei: t.imei,
         purchaseDate: t.purchase_date,
-        timestamp: new Date(t.created_at)
+        timestamp: new Date(t.created_at),
+        rating: t.rating
       }));
       setTransactions(mappedTransactions);
+      setFilteredTransactions(mappedTransactions);
     }
+  };
+
+  const handleSearch = (filters: SearchFilters) => {
+    let filtered = [...transactions];
+
+    if (filters.searchTerm) {
+      filtered = filtered.filter(t => 
+        t.sellerName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        t.buyerName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        t.imei.includes(filters.searchTerm)
+      );
+    }
+
+    if (filters.brand) {
+      filtered = filtered.filter(t => t.brand === filters.brand);
+    }
+
+    if (filters.dateFrom) {
+      filtered = filtered.filter(t => t.purchaseDate >= filters.dateFrom);
+    }
+
+    if (filters.dateTo) {
+      filtered = filtered.filter(t => t.purchaseDate <= filters.dateTo);
+    }
+
+    setFilteredTransactions(filtered);
+  };
+
+  const handleClearSearch = () => {
+    setFilteredTransactions(transactions);
+  };
+
+  const renderStars = (rating: number = 0) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <span key={i} className={`text-sm ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+        ★
+      </span>
+    ));
   };
 
   if (loading) {
@@ -94,56 +138,81 @@ const Transactions = () => {
         </Button>
       </div>
 
-      <Card className="holo-card">
-        <CardHeader>
-          <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl">
-            جميع المعاملات ({transactions.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {transactions.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-muted-foreground text-lg">لا توجد معاملات مسجلة</div>
-              <div className="text-accent text-sm mt-2">ابدأ بإضافة معاملتك الأولى</div>
-            </div>
-          ) : (
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-              {transactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="p-4 bg-card/30 border border-primary/20 rounded-lg hover:border-primary/40 transition-all duration-300"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <div className="text-primary text-sm font-semibold">المشتري</div>
-                      <div className="text-foreground">{transaction.buyerName}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        من {transaction.sellerName}
+      <div className="space-y-6">
+        <SearchTransactions onSearch={handleSearch} onClear={handleClearSearch} />
+        
+        <div className="flex justify-between items-center">
+          <div className="text-muted-foreground">
+            عرض {filteredTransactions.length} من أصل {transactions.length} معاملة
+          </div>
+          <ExportTransactions transactions={filteredTransactions} />
+        </div>
+
+        <Card className="holo-card">
+          <CardHeader>
+            <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl">
+              المعاملات ({filteredTransactions.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {filteredTransactions.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-muted-foreground text-lg">
+                  {transactions.length === 0 ? 'لا توجد معاملات مسجلة' : 'لا توجد نتائج تطابق البحث'}
+                </div>
+                <div className="text-accent text-sm mt-2">
+                  {transactions.length === 0 ? 'ابدأ بإضافة معاملتك الأولى' : 'جرب تعديل معايير البحث'}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                {filteredTransactions.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="p-4 bg-card/30 border border-primary/20 rounded-lg hover:border-primary/40 transition-all duration-300"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <div className="text-primary text-sm font-semibold">المشتري</div>
+                        <div className="text-foreground">{transaction.buyerName}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          من {transaction.sellerName}
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <div className="text-primary text-sm font-semibold">الجهاز</div>
-                      <div className="text-foreground">{transaction.brand} {transaction.phoneModel}</div>
-                      <div className="text-xs text-accent mt-1">
-                        IMEI: {transaction.imei.slice(0, 8)}...
+                      
+                      <div>
+                        <div className="text-primary text-sm font-semibold">الجهاز</div>
+                        <div className="text-foreground">{transaction.brand} {transaction.phoneModel}</div>
+                        <div className="text-xs text-accent mt-1">
+                          IMEI: {transaction.imei.slice(0, 8)}...
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <div className="text-primary text-sm font-semibold">التاريخ</div>
-                      <div className="text-foreground">{transaction.purchaseDate}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {new Date(transaction.timestamp).toLocaleTimeString('ar-SA')}
+                      
+                      <div>
+                        <div className="text-primary text-sm font-semibold">التاريخ</div>
+                        <div className="text-foreground">{transaction.purchaseDate}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {new Date(transaction.timestamp).toLocaleTimeString('ar-SA')}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-primary text-sm font-semibold">التقييم</div>
+                        <div className="flex gap-1 mt-1">
+                          {renderStars(transaction.rating)}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {transaction.rating || 0}/5
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -18,6 +18,7 @@ interface Transaction {
   imei: string;
   purchaseDate: string;
   timestamp: Date;
+  rating?: number;
 }
 
 const Index = () => {
@@ -61,7 +62,8 @@ const Index = () => {
         brand: t.brand,
         imei: t.imei,
         purchaseDate: t.purchase_date,
-        timestamp: new Date(t.created_at)
+        timestamp: new Date(t.created_at),
+        rating: t.rating
       }));
       setTransactions(mappedTransactions);
     }
@@ -75,11 +77,16 @@ const Index = () => {
       .insert({
         user_id: user.id,
         seller_name: formData.sellerName,
+        seller_email: formData.sellerEmail,
         buyer_name: formData.buyerName,
+        buyer_email: formData.buyerEmail,
         phone_model: formData.phoneModel,
         brand: formData.brand,
         imei: formData.imei,
-        purchase_date: formData.purchaseDate
+        purchase_date: formData.purchaseDate,
+        buyer_id_photo: formData.buyerIdPhoto,
+        signature: formData.signature,
+        rating: formData.rating
       });
 
     if (error) {
@@ -118,6 +125,10 @@ const Index = () => {
     t.purchaseDate === today
   ).length;
 
+  const averageRating = transactions.length > 0 
+    ? transactions.reduce((sum, t) => sum + (t.rating || 0), 0) / transactions.length 
+    : 0;
+
   return (
     <div className="min-h-screen" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -127,6 +138,7 @@ const Index = () => {
           totalTransactions={totalTransactions}
           topBrand={topBrand}
           recentTransactions={recentTransactions}
+          averageRating={averageRating}
         />
         
         <div className="space-y-8">

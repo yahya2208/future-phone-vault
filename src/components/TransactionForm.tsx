@@ -169,23 +169,16 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
     handleInputChange('buyerIdPhoto', photo);
     
     try {
-      const response = await fetch('/api/ocr-process', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageData: photo }),
+      const response = await supabase.functions.invoke('ocr-process', {
+        body: { imageData: photo }
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.name && result.name.trim()) {
-          handleInputChange('buyerName', result.name.trim());
-          toast({
-            title: "تم استخراج المعلومات",
-            description: "تم ملء اسم المشتري تلقائياً من بطاقة الهوية",
-          });
-        }
+      if (response.data && response.data.name && response.data.name.trim()) {
+        handleInputChange('buyerName', response.data.name.trim());
+        toast({
+          title: "تم استخراج المعلومات",
+          description: "تم ملء اسم المشتري تلقائياً من بطاقة الهوية",
+        });
       }
     } catch (error) {
       console.error('خطأ في معالجة OCR:', error);
