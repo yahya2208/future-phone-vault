@@ -1,3 +1,4 @@
+
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -6,7 +7,11 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    allowNavigation: [],
+    allowNavigation: [
+      'https://ukgvvjardofvelpztguj.supabase.co',
+      'https://cdn.gpteng.co',
+      'https://static.cloudflareinsights.com'
+    ],
     cleartext: true
   },
   android: {
