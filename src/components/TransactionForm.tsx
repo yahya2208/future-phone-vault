@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +35,7 @@ interface TransactionData {
   buyerIdPhoto?: string;
   signature?: string;
   rating?: number;
+  transactionId?: string;
 }
 
 const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: TransactionData) => void }) => {
@@ -71,24 +71,61 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
   };
 
   const sendTransactionEmail = async (transactionId: string) => {
+    console.log('Attempting to send transaction email...');
+    
+    // التحقق من وجود إيميل واحد على الأقل
+    if (!formData.sellerEmail && !formData.buyerEmail) {
+      console.log('No email addresses provided');
+      return;
+    }
+
     try {
-      const { error } = await supabase.functions.invoke('send-transaction-email', {
+      console.log('Calling email function with data:', {
+        ...formData,
+        transactionId
+      });
+
+      const { data, error } = await supabase.functions.invoke('send-transaction-email', {
         body: {
           ...formData,
-          transactionId
+          transactionId,
+          sellerEmail: formData.sellerEmail || undefined,
+          buyerEmail: formData.buyerEmail || undefined,
+          rating: formData.rating || 0
         }
       });
+
+      console.log('Email function response:', { data, error });
 
       if (error) {
         console.error('Error sending email:', error);
         toast({
           title: "تحذير",
-          description: "تم حفظ المعاملة لكن لم نتمكن من إرسال الإيميلات",
+          description: `تم حفظ المعاملة لكن حدث خطأ في إرسال الإيميلات: ${error.message}`,
           variant: "destructive"
         });
+      } else if (data) {
+        console.log('Email sent successfully:', data);
+        if (data.success) {
+          toast({
+            title: "تم إرسال الإيميلات",
+            description: `تم إرسال ${data.emailsSent} إيميل بنجاح`,
+          });
+        } else {
+          toast({
+            title: "خطأ في الإرسال",
+            description: `فشل في إرسال ${data.emailsFailed} إيميل`,
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
       console.error('Email sending failed:', error);
+      toast({
+        title: "خطأ في الإرسال",
+        description: "حدث خطأ أثناء إرسال الإيميلات",
+        variant: "destructive"
+      });
     }
   };
 
@@ -126,17 +163,27 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
 
     try {
       // حفظ المعاملة أولاً
-      const transactionId = `TXN-${Date.now()}`;
-      await onTransactionSave(formData);
+      const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log('Saving transaction with ID:', transactionId);
+      
+      await onTransactionSave({
+        ...formData,
+        transactionId
+      });
       
       // إرسال الإيميلات إذا كان مطلوباً
       if (sendEmails && (formData.sellerEmail || formData.buyerEmail)) {
+        console.log('Sending emails...');
         await sendTransactionEmail(transactionId);
+      } else {
+        console.log('Email sending skipped - not requested or no emails provided');
       }
 
       toast({
         title: "تم حفظ المعاملة",
-        description: sendEmails ? "تم تسجيل المعاملة وإرسال الإيميلات بنجاح" : "تم تسجيل معاملة الهاتف بنجاح",
+        description: sendEmails && (formData.sellerEmail || formData.buyerEmail) 
+          ? "تم تسجيل المعاملة وسيتم إرسال الإيميلات" 
+          : "تم تسجيل معاملة الهاتف بنجاح",
       });
 
       // Reset form
@@ -220,6 +267,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
         <CardContent>
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
               <div className="space-y-2">
                 <Label htmlFor="seller" className="text-primary text-sm font-semibold">
                   {t('sellerName')} *
