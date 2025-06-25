@@ -83,7 +83,7 @@ const Help = () => {
               <Mail className="text-primary" size={20} />
               <div>
                 <p className="font-semibold">البريد الإلكتروني</p>
-                <p className="text-muted-foreground text-sm">support@gazasaver.app</p>
+                <p className="text-muted-foreground text-sm">yahyamanouni@gmail.com</p>
               </div>
             </div>
             

@@ -43,8 +43,8 @@ const FooterLinks = () => {
             <a href="tel:+213551148943" className="block text-muted-foreground hover:text-primary transition-colors text-sm">
               +213551148943
             </a>
-            <a href="mailto:support@gazasaver.app" className="block text-muted-foreground hover:text-primary transition-colors text-sm">
-              support@gazasaver.app
+            <a href="mailto:yahyamanouni@gmail.com" className="block text-muted-foreground hover:text-primary transition-colors text-sm">
+              yahyamanouni@gmail.com
             </a>
           </div>
         </div>

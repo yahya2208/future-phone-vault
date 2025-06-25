@@ -24,9 +24,13 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
-      resize: 'none',
+      resize: 'body',
       style: 'dark',
-      resizeOnFullScreen: false
+      resizeOnFullScreen: true
+    },
+    StatusBar: {
+      style: 'dark',
+      backgroundColor: '#000000'
     }
   }
 };
