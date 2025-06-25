@@ -159,31 +159,31 @@ const handler = async (req: Request): Promise<Response> => {
     const transaction: TransactionEmailRequest = await req.json();
     console.log('Transaction data received:', transaction);
     
-    // التحقق من وجود بيانات الإيميل
-    if (!transaction.sellerEmail && !transaction.buyerEmail) {
-      console.log('No email addresses provided');
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'No email addresses provided'
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
     // التحقق من وجود RESEND_API_KEY
     if (!Deno.env.get("RESEND_API_KEY")) {
       console.error('RESEND_API_KEY not found');
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Email service not configured'
+        error: 'Email service not configured - RESEND_API_KEY missing'
       }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    const emailPromises = [];
+    // التحقق من وجود بيانات الإيميل
+    if (!transaction.sellerEmail && !transaction.buyerEmail) {
+      console.log('No email addresses provided');
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'No email addresses provided - transaction saved without sending emails',
+        emailsSent: 0
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const results = { sent: [], failed: [] };
     
     // إرسال إيميل للبائع
@@ -223,16 +223,21 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     const response = {
-      success: results.sent.length > 0,
+      success: results.sent.length > 0 || (results.sent.length === 0 && results.failed.length === 0),
       emailsSent: results.sent.length,
       emailsFailed: results.failed.length,
-      details: results
+      details: results,
+      message: results.sent.length > 0 
+        ? `تم إرسال ${results.sent.length} إيميل بنجاح` 
+        : results.failed.length > 0 
+        ? `فشل في إرسال ${results.failed.length} إيميل`
+        : 'لا توجد إيميلات للإرسال'
     };
     
     console.log('Final response:', response);
     
     return new Response(JSON.stringify(response), {
-      status: results.sent.length > 0 ? 200 : 500,
+      status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
     

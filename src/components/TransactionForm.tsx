@@ -75,8 +75,8 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
     
     // التحقق من وجود إيميل واحد على الأقل
     if (!formData.sellerEmail && !formData.buyerEmail) {
-      console.log('No email addresses provided');
-      return;
+      console.log('No email addresses provided - skipping email sending');
+      return { success: true, message: 'لا توجد عناوين إيميل - تم حفظ المعاملة فقط' };
     }
 
     try {
@@ -104,19 +104,28 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
           description: `تم حفظ المعاملة لكن حدث خطأ في إرسال الإيميلات: ${error.message}`,
           variant: "destructive"
         });
+        return { success: false, error: error.message };
       } else if (data) {
         console.log('Email sent successfully:', data);
-        if (data.success) {
+        if (data.success && data.emailsSent > 0) {
           toast({
             title: "تم إرسال الإيميلات",
             description: `تم إرسال ${data.emailsSent} إيميل بنجاح`,
           });
-        } else {
+          return { success: true, message: `تم إرسال ${data.emailsSent} إيميل بنجاح` };
+        } else if (data.emailsFailed > 0) {
           toast({
-            title: "خطأ في الإرسال",
-            description: `فشل في إرسال ${data.emailsFailed} إيميل`,
+            title: "خطأ جزئي في الإرسال",
+            description: `تم إرسال ${data.emailsSent} إيميل، فشل في إرسال ${data.emailsFailed} إيميل`,
             variant: "destructive"
           });
+          return { success: true, message: data.message || 'تم الإرسال جزئياً' };
+        } else {
+          toast({
+            title: "تم حفظ المعاملة",
+            description: data.message || "تم حفظ المعاملة بنجاح",
+          });
+          return { success: true, message: data.message || 'تم حفظ المعاملة' };
         }
       }
     } catch (error) {
@@ -126,6 +135,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
         description: "حدث خطأ أثناء إرسال الإيميلات",
         variant: "destructive"
       });
+      return { success: false, error: 'خطأ في الإرسال' };
     }
   };
 
@@ -174,17 +184,21 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
       // إرسال الإيميلات إذا كان مطلوباً
       if (sendEmails && (formData.sellerEmail || formData.buyerEmail)) {
         console.log('Sending emails...');
-        await sendTransactionEmail(transactionId);
+        const emailResult = await sendTransactionEmail(transactionId);
+        
+        if (emailResult.success) {
+          toast({
+            title: "تم حفظ المعاملة وإرسال الإيميلات",
+            description: emailResult.message || "تم تسجيل المعاملة وإرسال الإيميلات بنجاح",
+          });
+        }
       } else {
         console.log('Email sending skipped - not requested or no emails provided');
+        toast({
+          title: "تم حفظ المعاملة",
+          description: "تم تسجيل معاملة الهاتف بنجاح",
+        });
       }
-
-      toast({
-        title: "تم حفظ المعاملة",
-        description: sendEmails && (formData.sellerEmail || formData.buyerEmail) 
-          ? "تم تسجيل المعاملة وسيتم إرسال الإيميلات" 
-          : "تم تسجيل معاملة الهاتف بنجاح",
-      });
 
       // Reset form
       setFormData({
