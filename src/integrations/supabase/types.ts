@@ -47,6 +47,7 @@ export type Database = {
           rating: number | null
           seller_email: string | null
           seller_name: string
+          seller_phone: string | null
           signature: string | null
           updated_at: string
           user_id: string
@@ -64,6 +65,7 @@ export type Database = {
           rating?: number | null
           seller_email?: string | null
           seller_name: string
+          seller_phone?: string | null
           signature?: string | null
           updated_at?: string
           user_id: string
@@ -81,6 +83,7 @@ export type Database = {
           rating?: number | null
           seller_email?: string | null
           seller_name?: string
+          seller_phone?: string | null
           signature?: string | null
           updated_at?: string
           user_id?: string

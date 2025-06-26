@@ -73,7 +73,7 @@ const Transactions = () => {
         purchaseDate: t.purchase_date,
         timestamp: new Date(t.created_at),
         rating: t.rating,
-        sellerPhone: t.seller_phone,
+        sellerPhone: t.seller_phone || undefined,
         sellerEmail: t.seller_email,
         buyerEmail: t.buyer_email,
         buyerIdPhoto: t.buyer_id_photo,
