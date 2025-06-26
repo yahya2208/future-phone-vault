@@ -1,57 +1,32 @@
-
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-
 buildscript {
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.3.1'
-        classpath 'com.google.gms:google-services:4.4.0'
+        classpath 'com.android.tools.build:gradle:8.4.0'
     }
 }
 
-// Configure Java 17 for all projects
-allprojects {
-    tasks.withType(JavaCompile).configureEach {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-        options.encoding = 'UTF-8'
-        options.compilerArgs += ['-Xlint:deprecation']
-    }
-}
+ext {
+    compileSdkVersion = 35
+    targetSdkVersion = 35
+    minSdkVersion = 22
 
-apply from: "variables.gradle"
+    // مكتبات AndroidX الأساسية
+    androidxAppCompatVersion = "1.6.1"
+    androidxCoordinatorLayoutVersion = "1.2.0"
+    coreSplashScreenVersion = "1.0.1"
+
+    // مكتبات اختبار
+    junitVersion = "4.13.2"
+    androidxJunitVersion = "1.1.5"
+    androidxEspressoCoreVersion = "3.5.1"
+}
 
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
-    
-    // Set Java toolchain
-    plugins.withType(JavaPlugin).configureEach {
-        java {
-            toolchain {
-                languageVersion = JavaLanguageVersion.of(17)
-            }
-        }
-    }
-    
-    // Force Java 17 for all subprojects
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            android {
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
-            }
-        }
-    }
-}
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
 }
