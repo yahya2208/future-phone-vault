@@ -44,6 +44,8 @@ const Privacy = () => {
               <li>تاريخ الشراء</li>
               <li>صور بطاقة الهوية (اختياري)</li>
               <li>التوقيع الإلكتروني</li>
+              <li>أرقام الهواتف (اختياري)</li>
+              <li>عناوين البريد الإلكتروني (اختياري)</li>
             </ul>
           </div>
 
@@ -64,7 +66,14 @@ const Privacy = () => {
           <div>
             <h3 className="text-lg font-semibold text-primary mb-3">حقوقك</h3>
             <p className="text-muted-foreground">
-              لديك الحق في طلب الوصول إلى بياناتك، تصحيحها، أو حذفها. للاستفسارات حول الخصوصية، يرجى التواصل معنا.
+              لديك الحق في طلب الوصول إلى بياناتك ورؤيتها. <strong>تنبيه مهم:</strong> بعد تأكيد المعاملة، لا يمكن تعديل أو حذف البيانات المسجلة لأغراض الأمان ومنع التلاعب. هذا يحمي جميع الأطراف من الاحتيال ويضمن سلامة سجل المعاملات.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-primary mb-3">الاتصال</h3>
+            <p className="text-muted-foreground">
+              للاستفسارات حول الخصوصية، يرجى التواصل معنا على: yahyamanouni@gmail.com
             </p>
           </div>
         </CardContent>

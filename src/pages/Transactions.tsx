@@ -6,9 +6,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye } from 'lucide-react';
 import SearchTransactions, { SearchFilters } from '@/components/SearchTransactions';
 import ExportTransactions from '@/components/ExportTransactions';
+import TransactionDetails from '@/components/TransactionDetails';
 
 interface Transaction {
   id: string;
@@ -20,14 +21,20 @@ interface Transaction {
   purchaseDate: string;
   timestamp: Date;
   rating?: number;
+  sellerPhone?: string;
+  sellerEmail?: string;
+  buyerEmail?: string;
+  buyerIdPhoto?: string;
+  signature?: string;
 }
 
 const Transactions = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -65,7 +72,12 @@ const Transactions = () => {
         imei: t.imei,
         purchaseDate: t.purchase_date,
         timestamp: new Date(t.created_at),
-        rating: t.rating
+        rating: t.rating,
+        sellerPhone: t.seller_phone,
+        sellerEmail: t.seller_email,
+        buyerEmail: t.buyer_email,
+        buyerIdPhoto: t.buyer_id_photo,
+        signature: t.signature
       }));
       setTransactions(mappedTransactions);
       setFilteredTransactions(mappedTransactions);
@@ -171,7 +183,7 @@ const Transactions = () => {
                     key={transaction.id}
                     className="p-4 bg-card/30 border border-primary/20 rounded-lg hover:border-primary/40 transition-all duration-300"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div>
                         <div className="text-primary text-sm font-semibold">المشتري</div>
                         <div className="text-foreground">{transaction.buyerName}</div>
@@ -205,6 +217,18 @@ const Transactions = () => {
                           {transaction.rating || 0}/5
                         </div>
                       </div>
+
+                      <div className="flex items-center justify-center">
+                        <Button
+                          onClick={() => setSelectedTransaction(transaction)}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <Eye size={16} />
+                          عرض التفاصيل
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -213,6 +237,13 @@ const Transactions = () => {
           </CardContent>
         </Card>
       </div>
+
+      {selectedTransaction && (
+        <TransactionDetails
+          transaction={selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
+        />
+      )}
     </div>
   );
 };

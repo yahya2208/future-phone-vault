@@ -25,6 +25,7 @@ const translations = {
     today: 'اليوم',
     newTransactions: 'معاملات جديدة',
     notAvailable: 'غير متوفر',
+    averageRating: 'معدل التقييم',
     
     // Transaction Form
     newTransactionPortal: 'بوابة المعاملات الجديدة',
@@ -35,6 +36,13 @@ const translations = {
     imei: 'رقم الهوية (15 رقم)',
     purchaseDate: 'تاريخ الشراء',
     processTransaction: 'معالجة المعاملة',
+    sellerPhone: 'رقم هاتف البائع (اختياري)',
+    sellerEmailOptional: 'إيميل البائع (اختياري)',
+    buyerEmailOptional: 'إيميل المشتري (اختياري)',
+    rateExperience: 'قيم تجربة المعاملة',
+    chooseFromGallery: 'اختيار من المعرض',
+    signatureAdded: 'تم إضافة التوقيع',
+    sendEmailReceipt: 'إرسال إيصال المعاملة عبر الإيميل (اختياري)',
     
     // Camera and Signature
     buyerIdPhoto: 'صورة هوية المشتري',
@@ -48,6 +56,13 @@ const translations = {
     privacy: 'الخصوصية',
     howToUse: 'كيفية الاستخدام',
     contactUs: 'اتصل بنا',
+    viewTransactions: 'عرض المعاملات',
+    pages: 'الصفحات',
+    support: 'الدعم',
+    helpAndSupport: 'المساعدة والدعم',
+    allRightsReserved: 'جميع الحقوق محفوظة',
+    numberOfUsers: 'عدد المستخدمين',
+    appDescription: 'نظام توثيق معاملات الهواتف المحمولة الأكثر أماناً وموثوقية',
     
     // Auth
     login: 'تسجيل الدخول',
@@ -58,7 +73,7 @@ const translations = {
   },
   en: {
     // Header
-    appTitle: 'Gaza Cyber',
+    appTitle: 'Ghaza Saver',
     appSubtitle: 'Smart Phone Management System',
     currentTime: 'Current Time',
     systemStatus: 'System Status',
@@ -73,6 +88,7 @@ const translations = {
     today: 'Today',
     newTransactions: 'New Transactions',
     notAvailable: 'Not Available',
+    averageRating: 'Average Rating',
     
     // Transaction Form
     newTransactionPortal: 'New Transaction Portal',
@@ -83,6 +99,13 @@ const translations = {
     imei: 'IMEI (15 digits)',
     purchaseDate: 'Purchase Date',
     processTransaction: 'PROCESS TRANSACTION',
+    sellerPhone: 'Seller Phone (Optional)',
+    sellerEmailOptional: 'Seller Email (Optional)',
+    buyerEmailOptional: 'Buyer Email (Optional)',
+    rateExperience: 'Rate Transaction Experience',
+    chooseFromGallery: 'Choose from Gallery',
+    signatureAdded: 'Signature Added',
+    sendEmailReceipt: 'Send Email Receipt (Optional)',
     
     // Camera and Signature
     buyerIdPhoto: 'Buyer ID Photo',
@@ -96,6 +119,13 @@ const translations = {
     privacy: 'Privacy',
     howToUse: 'How to Use',
     contactUs: 'Contact Us',
+    viewTransactions: 'View Transactions',
+    pages: 'Pages',
+    support: 'Support',
+    helpAndSupport: 'Help & Support',
+    allRightsReserved: 'All Rights Reserved',
+    numberOfUsers: 'Number of Users',
+    appDescription: 'The most secure and reliable mobile phone transaction documentation system',
     
     // Auth
     login: 'Login',

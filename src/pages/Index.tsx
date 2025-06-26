@@ -7,6 +7,7 @@ import FuturisticHeader from '@/components/FuturisticHeader';
 import TransactionForm from '@/components/TransactionForm';
 import DashboardStats from '@/components/DashboardStats';
 import FooterLinks from '@/components/FooterLinks';
+import PrivacyNotification from '@/components/PrivacyNotification';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Transaction {
@@ -78,6 +79,7 @@ const Index = () => {
         user_id: user.id,
         seller_name: formData.sellerName,
         seller_email: formData.sellerEmail,
+        seller_phone: formData.sellerPhone,
         buyer_name: formData.buyerName,
         buyer_email: formData.buyerEmail,
         phone_model: formData.phoneModel,
@@ -131,6 +133,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <PrivacyNotification />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <FuturisticHeader />
         

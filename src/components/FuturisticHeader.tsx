@@ -21,32 +21,32 @@ const FuturisticHeader = () => {
   };
 
   return (
-    <header className="relative p-6 mb-8" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
+    <header className="relative p-4 md:p-6 mb-8" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-4 space-x-reverse">
           <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
             <div className="w-6 h-6 bg-background rounded-full pulse-glow"></div>
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-primary glow-text font-['Orbitron']">
+            <h1 className="text-2xl md:text-3xl font-bold text-primary glow-text font-['Orbitron']">
               {t('appTitle')}
             </h1>
-            <p className="text-sm text-muted-foreground">{t('appSubtitle')}</p>
+            <p className="text-xs md:text-sm text-muted-foreground">{t('appSubtitle')}</p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-4 space-x-reverse">
+        <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 md:space-x-reverse">
           <LanguageSwitcher />
           
           <div className="text-center">
-            <div className="text-primary text-sm font-mono">{t('currentTime')}</div>
+            <div className="text-primary text-xs md:text-sm font-mono">{t('currentTime')}</div>
             <div className="text-xs text-accent font-mono">{currentTime}</div>
           </div>
           
           {user && (
             <Button 
               onClick={handleLogout}
-              className="neural-btn text-sm"
+              className="neural-btn text-xs md:text-sm px-3 py-2 min-w-[100px]"
               variant="outline"
             >
               {t('logout')}
@@ -54,10 +54,10 @@ const FuturisticHeader = () => {
           )}
           
           <div className="text-center">
-            <div className="text-primary text-sm font-mono">{t('systemStatus')}</div>
+            <div className="text-primary text-xs md:text-sm font-mono">{t('systemStatus')}</div>
             <div className="text-xs text-accent">{t('connected')}</div>
           </div>
-          <div className="w-2 h-12 bg-gradient-to-t from-primary to-accent rounded-full pulse-glow"></div>
+          <div className="w-2 h-8 md:h-12 bg-gradient-to-t from-primary to-accent rounded-full pulse-glow"></div>
         </div>
       </div>
       
