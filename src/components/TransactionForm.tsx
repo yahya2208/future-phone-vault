@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +35,7 @@ interface TransactionData {
   buyerIdPhoto?: string;
   signature?: string;
   rating?: number;
+  transactionId?: string;
 }
 
 const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: TransactionData) => void }) => {
@@ -71,24 +71,71 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
   };
 
   const sendTransactionEmail = async (transactionId: string) => {
+    console.log('Attempting to send transaction email...');
+    
+    // التحقق من وجود إيميل واحد على الأقل
+    if (!formData.sellerEmail && !formData.buyerEmail) {
+      console.log('No email addresses provided - skipping email sending');
+      return { success: true, message: 'لا توجد عناوين إيميل - تم حفظ المعاملة فقط' };
+    }
+
     try {
-      const { error } = await supabase.functions.invoke('send-transaction-email', {
+      console.log('Calling email function with data:', {
+        ...formData,
+        transactionId
+      });
+
+      const { data, error } = await supabase.functions.invoke('send-transaction-email', {
         body: {
           ...formData,
-          transactionId
+          transactionId,
+          sellerEmail: formData.sellerEmail || undefined,
+          buyerEmail: formData.buyerEmail || undefined,
+          rating: formData.rating || 0
         }
       });
+
+      console.log('Email function response:', { data, error });
 
       if (error) {
         console.error('Error sending email:', error);
         toast({
           title: "تحذير",
-          description: "تم حفظ المعاملة لكن لم نتمكن من إرسال الإيميلات",
+          description: `تم حفظ المعاملة لكن حدث خطأ في إرسال الإيميلات: ${error.message}`,
           variant: "destructive"
         });
+        return { success: false, error: error.message };
+      } else if (data) {
+        console.log('Email sent successfully:', data);
+        if (data.success && data.emailsSent > 0) {
+          toast({
+            title: "تم إرسال الإيميلات",
+            description: `تم إرسال ${data.emailsSent} إيميل بنجاح`,
+          });
+          return { success: true, message: `تم إرسال ${data.emailsSent} إيميل بنجاح` };
+        } else if (data.emailsFailed > 0) {
+          toast({
+            title: "خطأ جزئي في الإرسال",
+            description: `تم إرسال ${data.emailsSent} إيميل، فشل في إرسال ${data.emailsFailed} إيميل`,
+            variant: "destructive"
+          });
+          return { success: true, message: data.message || 'تم الإرسال جزئياً' };
+        } else {
+          toast({
+            title: "تم حفظ المعاملة",
+            description: data.message || "تم حفظ المعاملة بنجاح",
+          });
+          return { success: true, message: data.message || 'تم حفظ المعاملة' };
+        }
       }
     } catch (error) {
       console.error('Email sending failed:', error);
+      toast({
+        title: "خطأ في الإرسال",
+        description: "حدث خطأ أثناء إرسال الإيميلات",
+        variant: "destructive"
+      });
+      return { success: false, error: 'خطأ في الإرسال' };
     }
   };
 
@@ -126,18 +173,32 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
 
     try {
       // حفظ المعاملة أولاً
-      const transactionId = `TXN-${Date.now()}`;
-      await onTransactionSave(formData);
+      const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log('Saving transaction with ID:', transactionId);
+      
+      await onTransactionSave({
+        ...formData,
+        transactionId
+      });
       
       // إرسال الإيميلات إذا كان مطلوباً
       if (sendEmails && (formData.sellerEmail || formData.buyerEmail)) {
-        await sendTransactionEmail(transactionId);
+        console.log('Sending emails...');
+        const emailResult = await sendTransactionEmail(transactionId);
+        
+        if (emailResult.success) {
+          toast({
+            title: "تم حفظ المعاملة وإرسال الإيميلات",
+            description: emailResult.message || "تم تسجيل المعاملة وإرسال الإيميلات بنجاح",
+          });
+        }
+      } else {
+        console.log('Email sending skipped - not requested or no emails provided');
+        toast({
+          title: "تم حفظ المعاملة",
+          description: "تم تسجيل معاملة الهاتف بنجاح",
+        });
       }
-
-      toast({
-        title: "تم حفظ المعاملة",
-        description: sendEmails ? "تم تسجيل المعاملة وإرسال الإيميلات بنجاح" : "تم تسجيل معاملة الهاتف بنجاح",
-      });
 
       // Reset form
       setFormData({
@@ -220,6 +281,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
         <CardContent>
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
               <div className="space-y-2">
                 <Label htmlFor="seller" className="text-primary text-sm font-semibold">
                   {t('sellerName')} *
