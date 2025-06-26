@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import SignaturePad from './SignaturePad';
 interface TransactionData {
   sellerName: string;
   sellerEmail?: string;
+  sellerPhone?: string;
   buyerName: string;
   buyerEmail?: string;
   phoneModel: string;
@@ -42,6 +44,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
   const [formData, setFormData] = useState<TransactionData>({
     sellerName: '',
     sellerEmail: '',
+    sellerPhone: '',
     buyerName: '',
     buyerEmail: '',
     phoneModel: '',
@@ -204,6 +207,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
       setFormData({
         sellerName: '',
         sellerEmail: '',
+        sellerPhone: '',
         buyerName: '',
         buyerEmail: '',
         phoneModel: '',
@@ -274,7 +278,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
               variant="outline"
               className="text-sm"
             >
-              عرض المعاملات
+              {language === 'ar' ? 'عرض المعاملات' : 'View Transactions'}
             </Button>
           </CardTitle>
         </CardHeader>
@@ -297,7 +301,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
 
               <div className="space-y-2">
                 <Label htmlFor="sellerEmail" className="text-primary text-sm font-semibold">
-                  إيميل البائع (اختياري)
+                  {language === 'ar' ? 'إيميل البائع (اختياري)' : 'Seller Email (Optional)'}
                 </Label>
                 <Input
                   id="sellerEmail"
@@ -306,6 +310,20 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
                   placeholder="seller@example.com"
                   value={formData.sellerEmail}
                   onChange={(e) => handleInputChange('sellerEmail', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sellerPhone" className="text-primary text-sm font-semibold">
+                  {language === 'ar' ? 'رقم هاتف البائع (اختياري)' : 'Seller Phone (Optional)'}
+                </Label>
+                <Input
+                  id="sellerPhone"
+                  type="tel"
+                  className="quantum-input"
+                  placeholder={language === 'ar' ? 'رقم الهاتف' : 'Phone number'}
+                  value={formData.sellerPhone}
+                  onChange={(e) => handleInputChange('sellerPhone', e.target.value)}
                 />
               </div>
 
@@ -324,7 +342,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
 
               <div className="space-y-2">
                 <Label htmlFor="buyerEmail" className="text-primary text-sm font-semibold">
-                  إيميل المشتري (اختياري)
+                  {language === 'ar' ? 'إيميل المشتري (اختياري)' : 'Buyer Email (Optional)'}
                 </Label>
                 <Input
                   id="buyerEmail"
@@ -398,7 +416,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-primary text-sm font-semibold">
-                  قيم تجربة المعاملة
+                  {language === 'ar' ? 'قيم تجربة المعاملة' : 'Rate Transaction Experience'}
                 </Label>
                 <StarRating 
                   rating={formData.rating || 0} 
@@ -426,13 +444,16 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
                   onCheckedChange={(checked) => setSendEmails(checked === true)}
                 />
                 <Label htmlFor="sendEmails" className="text-sm">
-                  إرسال إيصال المعاملة عبر الإيميل (اختياري)
+                  {language === 'ar' ? 'إرسال إيصال المعاملة عبر الإيميل (اختياري)' : 'Send Transaction Receipt via Email (Optional)'}
                 </Label>
               </div>
               
               {sendEmails && !formData.sellerEmail && !formData.buyerEmail && (
                 <p className="text-yellow-600 text-sm">
-                  يرجى إدخال إيميل البائع أو المشتري لإرسال الإيصال
+                  {language === 'ar' 
+                    ? 'يرجى إدخال إيميل البائع أو المشتري لإرسال الإيصال'
+                    : 'Please enter seller or buyer email to send receipt'
+                  }
                 </p>
               )}
             </div>
