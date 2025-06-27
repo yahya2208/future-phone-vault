@@ -10,6 +10,9 @@ interface UserActivation {
   trialTransactionsUsed: number;
   maxTrialTransactions: number;
   deviceFingerprint?: string;
+  activationType?: string;
+  subscriptionExpiresAt?: string;
+  isAdmin?: boolean;
 }
 
 interface ActivationContextType {
@@ -19,6 +22,9 @@ interface ActivationContextType {
   checkActivationStatus: () => Promise<void>;
   logSecurityEvent: (eventType: string, details: any) => Promise<void>;
   incrementTrialUsage: () => Promise<void>;
+  generateOwnerCode: () => Promise<string | null>;
+  generateGiftCodes: () => Promise<any[]>;
+  generateLifetimeCodes: () => Promise<any[]>;
   loading: boolean;
 }
 
@@ -120,7 +126,10 @@ export const ActivationProvider = ({ children }: { children: React.ReactNode }) 
         isActivated: activation.is_activated || false,
         trialTransactionsUsed: activation.trial_transactions_used || 0,
         maxTrialTransactions: activation.max_trial_transactions || 3,
-        deviceFingerprint: activation.device_fingerprint
+        deviceFingerprint: activation.device_fingerprint,
+        activationType: activation.activation_type,
+        subscriptionExpiresAt: activation.subscription_expires_at,
+        isAdmin: activation.is_admin || false
       });
 
     } catch (error) {
@@ -149,15 +158,30 @@ export const ActivationProvider = ({ children }: { children: React.ReactNode }) 
         return false;
       }
 
-      if (data) {
-        // Update user activation status
+      if (data && data.success) {
+        // Update user activation status based on code type
+        const updateData: any = {
+          is_activated: true,
+          activated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          activation_type: data.code_type
+        };
+
+        // Set admin status for owner codes
+        if (data.code_type === 'owner') {
+          updateData.is_admin = true;
+        }
+
+        // Set subscription expiration for subscription codes
+        if (data.code_type === 'subscription' && data.subscription_duration) {
+          const expirationDate = new Date();
+          expirationDate.setMonth(expirationDate.getMonth() + data.subscription_duration);
+          updateData.subscription_expires_at = expirationDate.toISOString();
+        }
+
         const { error: updateError } = await supabase
           .from('user_activations')
-          .update({
-            is_activated: true,
-            activated_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('user_id', user.id);
 
         if (updateError) {
@@ -165,16 +189,22 @@ export const ActivationProvider = ({ children }: { children: React.ReactNode }) 
           return false;
         }
 
-        setUserActivation(prev => prev ? { ...prev, isActivated: true } : null);
+        setUserActivation(prev => prev ? { 
+          ...prev, 
+          isActivated: true,
+          activationType: data.code_type,
+          isAdmin: data.code_type === 'owner' || data.is_admin
+        } : null);
         
         await logSecurityEvent('user_activated', {
           email: user.email,
-          activationTime: new Date().toISOString()
+          activationTime: new Date().toISOString(),
+          codeType: data.code_type
         });
 
         toast({
-          title: "تم التفعيل بنجاح! 🎉",
-          description: "تم تفعيل حسابك مدى الحياة. يمكنك الآن استخدام جميع مواصفات التطبيق",
+          title: data.message || "تم التفعيل بنجاح! 🎉",
+          description: "تم تفعيل حسابك. يمكنك الآن استخدام جميع مواصفات التطبيق",
         });
 
         return true;
@@ -186,7 +216,7 @@ export const ActivationProvider = ({ children }: { children: React.ReactNode }) 
         
         toast({
           title: "كود غير صحيح",
-          description: "الكود المدخل غير صحيح أو منتهي الصلاحية",
+          description: data?.message || "الكود المدخل غير صحيح أو منتهي الصلاحية",
           variant: "destructive"
         });
         
@@ -195,6 +225,98 @@ export const ActivationProvider = ({ children }: { children: React.ReactNode }) 
     } catch (error) {
       console.error('خطأ في عملية التفعيل:', error);
       return false;
+    }
+  };
+
+  const generateOwnerCode = async (): Promise<string | null> => {
+    if (!user || !userActivation?.isAdmin) {
+      toast({
+        title: "غير مصرح",
+        description: "يجب أن تكون مدير للقيام بهذا الإجراء",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('generate_owner_code');
+      
+      if (error) {
+        console.error('خطأ في إنشاء كود المالك:', error);
+        return null;
+      }
+
+      await logSecurityEvent('owner_code_generated', {
+        generatedBy: user.email,
+        timestamp: new Date().toISOString()
+      });
+
+      return data;
+    } catch (error) {
+      console.error('خطأ في إنشاء كود المالك:', error);
+      return null;
+    }
+  };
+
+  const generateGiftCodes = async (): Promise<any[]> => {
+    if (!user || !userActivation?.isAdmin) {
+      toast({
+        title: "غير مصرح",
+        description: "يجب أن تكون مدير للقيام بهذا الإجراء",
+        variant: "destructive"
+      });
+      return [];
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('generate_gift_codes');
+      
+      if (error) {
+        console.error('خطأ في إنشاء أكواد الهدايا:', error);
+        return [];
+      }
+
+      await logSecurityEvent('gift_codes_generated', {
+        generatedBy: user.email,
+        count: data?.length || 0,
+        timestamp: new Date().toISOString()
+      });
+
+      return data || [];
+    } catch (error) {
+      console.error('خطأ في إنشاء أكواد الهدايا:', error);
+      return [];
+    }
+  };
+
+  const generateLifetimeCodes = async (): Promise<any[]> => {
+    if (!user || !userActivation?.isAdmin) {
+      toast({
+        title: "غير مصرح",
+        description: "يجب أن تكون مدير للقيام بهذا الإجراء",
+        variant: "destructive"
+      });
+      return [];
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('generate_lifetime_codes');
+      
+      if (error) {
+        console.error('خطأ في إنشاء الأكواد الأبدية:', error);
+        return [];
+      }
+
+      await logSecurityEvent('lifetime_codes_generated', {
+        generatedBy: user.email,
+        count: data?.length || 0,
+        timestamp: new Date().toISOString()
+      });
+
+      return data || [];
+    } catch (error) {
+      console.error('خطأ في إنشاء الأكواد الأبدية:', error);
+      return [];
     }
   };
 
@@ -253,6 +375,9 @@ export const ActivationProvider = ({ children }: { children: React.ReactNode }) 
     checkActivationStatus,
     logSecurityEvent,
     incrementTrialUsage,
+    generateOwnerCode,
+    generateGiftCodes,
+    generateLifetimeCodes,
     loading,
   };
 

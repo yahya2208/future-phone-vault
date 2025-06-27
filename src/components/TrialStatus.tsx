@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Shield, Star, Clock } from 'lucide-react';
+import { Shield, Star, Clock, Crown, Gift } from 'lucide-react';
 import { useActivation } from '@/hooks/useActivation';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -12,17 +12,18 @@ const TrialStatus = () => {
 
   if (!userActivation) return null;
 
-  if (userActivation.isActivated) {
+  // Show admin status
+  if (userActivation.isAdmin) {
     return (
-      <Card className="holo-card border-green-500/30 bg-green-50/50">
+      <Card className="holo-card border-purple-500/30 bg-purple-50/50">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-500 rounded-full">
-              <Star className="text-white" size={18} />
+            <div className="p-2 bg-purple-500 rounded-full">
+              <Crown className="text-white" size={18} />
             </div>
             <div>
-              <h3 className="font-bold text-green-800">النسخة الكاملة مفعلة ✨</h3>
-              <p className="text-sm text-green-600">استمتع بجميع المواصفات مدى الحياة</p>
+              <h3 className="font-bold text-purple-800">حساب المدير مفعل 👑</h3>
+              <p className="text-sm text-purple-600">صلاحيات إدارية كاملة - مدى الحياة</p>
             </div>
           </div>
         </CardContent>
@@ -30,6 +31,68 @@ const TrialStatus = () => {
     );
   }
 
+  // Show activated status based on activation type
+  if (userActivation.isActivated) {
+    const getActivationIcon = () => {
+      switch (userActivation.activationType) {
+        case 'gift':
+          return <Gift className="text-white" size={18} />;
+        case 'lifetime':
+          return <Star className="text-white" size={18} />;
+        case 'subscription':
+          return <Clock className="text-white" size={18} />;
+        default:
+          return <Star className="text-white" size={18} />;
+      }
+    };
+
+    const getActivationText = () => {
+      switch (userActivation.activationType) {
+        case 'gift':
+          return {
+            title: 'تم التفعيل بكود الهدية ✨',
+            subtitle: 'استمتع بجميع المواصفات مجاناً'
+          };
+        case 'lifetime':
+          return {
+            title: 'النسخة الأبدية مفعلة 🎉',
+            subtitle: 'استمتع بجميع المواصفات مدى الحياة'
+          };
+        case 'subscription':
+          return {
+            title: 'الاشتراك مفعل 📅',
+            subtitle: userActivation.subscriptionExpiresAt 
+              ? `ينتهي في: ${new Date(userActivation.subscriptionExpiresAt).toLocaleDateString('ar-SA')}`
+              : 'اشتراك نشط'
+          };
+        default:
+          return {
+            title: 'النسخة الكاملة مفعلة ✨',
+            subtitle: 'استمتع بجميع المواصفات مدى الحياة'
+          };
+      }
+    };
+
+    const activationText = getActivationText();
+
+    return (
+      <Card className="holo-card border-green-500/30 bg-green-50/50">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-500 rounded-full">
+              {getActivationIcon()}
+            </div>
+            <div>
+              <h3 className="font-bold text-green-800">{activationText.title}</h3>
+              <p className="text-sm text-green-600">{activationText.subtitle}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show trial status
   const remaining = userActivation.maxTrialTransactions - userActivation.trialTransactionsUsed;
   const percentage = (userActivation.trialTransactionsUsed / userActivation.maxTrialTransactions) * 100;
 

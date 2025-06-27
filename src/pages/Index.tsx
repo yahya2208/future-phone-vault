@@ -11,6 +11,7 @@ import FooterLinks from '@/components/FooterLinks';
 import PrivacyNotification from '@/components/PrivacyNotification';
 import TrialStatus from '@/components/TrialStatus';
 import ActivationModal from '@/components/ActivationModal';
+import AdminCodePanel from '@/components/AdminCodePanel';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Transaction {
@@ -176,6 +177,13 @@ const Index = () => {
         <FuturisticHeader />
         
         {userActivation && <TrialStatus />}
+        
+        {/* Show admin panel if user is admin */}
+        {userActivation?.isAdmin && (
+          <div className="mb-8">
+            <AdminCodePanel />
+          </div>
+        )}
         
         <DashboardStats 
           totalTransactions={totalTransactions}
