@@ -1,92 +1,224 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useActivation } from '@/hooks/useActivation';
-import { Plus, Lock } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from '@/components/ui/alert-dialog';
+import CameraCapture from './CameraCapture';
+import SignaturePad from './SignaturePad';
 
-interface TransactionFormProps {
-  onTransactionSave: (formData: any) => Promise<void>;
-  disabled?: boolean;
+interface TransactionData {
+  sellerName: string;
+  sellerEmail?: string;
+  buyerName: string;
+  buyerEmail?: string;
+  phoneModel: string;
+  brand: string;
+  imei: string;
+  purchaseDate: string;
+  buyerIdPhoto?: string;
+  signature?: string;
+  rating?: number;
+  transactionId?: string;
 }
 
-const TransactionForm = ({ onTransactionSave, disabled = false }: TransactionFormProps) => {
-  const { language, t } = useLanguage();
-  const { userActivation } = useActivation();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
+const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: TransactionData) => void }) => {
+  const [formData, setFormData] = useState<TransactionData>({
     sellerName: '',
     sellerEmail: '',
-    sellerPhone: '',
     buyerName: '',
     buyerEmail: '',
     phoneModel: '',
     brand: '',
     imei: '',
-    purchaseDate: '',
-    rating: 5
+    purchaseDate: new Date().toISOString().split('T')[0],
+    rating: 0
   });
 
-  const phoneModels = [
-    'iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 15', 'iPhone 14 Pro Max',
-    'Samsung Galaxy S24 Ultra', 'Samsung Galaxy S24+', 'Samsung Galaxy S24',
-    'Xiaomi 14 Ultra', 'Xiaomi 14 Pro', 'OnePlus 12', 'Google Pixel 8 Pro'
+  const [sendEmails, setSendEmails] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const { t, language } = useLanguage();
+  const navigate = useNavigate();
+
+  const phonebrands = [
+    'Apple', 'Samsung', 'Google', 'OnePlus', 'Xiaomi', 'Huawei', 
+    'Sony', 'Nokia', 'Motorola', 'Oppo', 'Vivo', 'Realme'
   ];
 
-  const brands = ['Apple', 'Samsung', 'Xiaomi', 'OnePlus', 'Google', 'Huawei', 'Oppo', 'Vivo'];
+  const handleInputChange = (field: keyof TransactionData, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateIMEI = (imei: string): boolean => {
+    return /^\d{15}$/.test(imei);
+  };
+
+  const sendTransactionEmail = async (transactionId: string) => {
+    console.log('Attempting to send transaction email...');
     
-    if (disabled) {
+    // التحقق من وجود إيميل واحد على الأقل
+    if (!formData.sellerEmail && !formData.buyerEmail) {
+      console.log('No email addresses provided - skipping email sending');
+      return { success: true, message: 'لا توجد عناوين إيميل - تم حفظ المعاملة فقط' };
+    }
+
+    try {
+      console.log('Calling email function with data:', {
+        ...formData,
+        transactionId
+      });
+
+      const { data, error } = await supabase.functions.invoke('send-transaction-email', {
+        body: {
+          ...formData,
+          transactionId,
+          sellerEmail: formData.sellerEmail || undefined,
+          buyerEmail: formData.buyerEmail || undefined,
+          rating: formData.rating || 0
+        }
+      });
+
+      console.log('Email function response:', { data, error });
+
+      if (error) {
+        console.error('Error sending email:', error);
+        toast({
+          title: "تحذير",
+          description: `تم حفظ المعاملة لكن حدث خطأ في إرسال الإيميلات: ${error.message}`,
+          variant: "destructive"
+        });
+        return { success: false, error: error.message };
+      } else if (data) {
+        console.log('Email sent successfully:', data);
+        if (data.success && data.emailsSent > 0) {
+          toast({
+            title: "تم إرسال الإيميلات",
+            description: `تم إرسال ${data.emailsSent} إيميل بنجاح`,
+          });
+          return { success: true, message: `تم إرسال ${data.emailsSent} إيميل بنجاح` };
+        } else if (data.emailsFailed > 0) {
+          toast({
+            title: "خطأ جزئي في الإرسال",
+            description: `تم إرسال ${data.emailsSent} إيميل، فشل في إرسال ${data.emailsFailed} إيميل`,
+            variant: "destructive"
+          });
+          return { success: true, message: data.message || 'تم الإرسال جزئياً' };
+        } else {
+          toast({
+            title: "تم حفظ المعاملة",
+            description: data.message || "تم حفظ المعاملة بنجاح",
+          });
+          return { success: true, message: data.message || 'تم حفظ المعاملة' };
+        }
+      }
+    } catch (error) {
+      console.error('Email sending failed:', error);
       toast({
-        title: "يجب تفعيل النسخة الكاملة",
-        description: "انتهت فترة التجربة المجانية. يرجى تفعيل النسخة الكاملة للمتابعة",
+        title: "خطأ في الإرسال",
+        description: "حدث خطأ أثناء إرسال الإيميلات",
+        variant: "destructive"
+      });
+      return { success: false, error: 'خطأ في الإرسال' };
+    }
+  };
+
+  const handleConfirmedSubmit = async () => {
+    // Validation
+    if (!formData.sellerName || !formData.buyerName || !formData.phoneModel || 
+        !formData.brand || !formData.imei || !formData.purchaseDate) {
+      toast({
+        title: "خطأ في التحقق",
+        description: "جميع الحقول مطلوبة",
         variant: "destructive"
       });
       return;
     }
 
-    if (!formData.sellerName || !formData.buyerName || !formData.phoneModel || !formData.brand || !formData.imei) {
+    if (!validateIMEI(formData.imei)) {
       toast({
-        title: "بيانات ناقصة",
-        description: "يرجى ملء جميع الحقول المطلوبة",
+        title: "رقم IMEI غير صحيح",
+        description: "يجب أن يكون رقم IMEI مكوناً من 15 رقماً بالضبط",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.signature) {
+      toast({
+        title: "التوقيع مطلوب",
+        description: "يرجى إضافة توقيعك لإتمام المعاملة",
         variant: "destructive"
       });
       return;
     }
 
     setIsSubmitting(true);
+
     try {
-      await onTransactionSave(formData);
+      // حفظ المعاملة أولاً
+      const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log('Saving transaction with ID:', transactionId);
       
+      await onTransactionSave({
+        ...formData,
+        transactionId
+      });
+      
+      // إرسال الإيميلات إذا كان مطلوباً
+      if (sendEmails && (formData.sellerEmail || formData.buyerEmail)) {
+        console.log('Sending emails...');
+        const emailResult = await sendTransactionEmail(transactionId);
+        
+        if (emailResult.success) {
+          toast({
+            title: "تم حفظ المعاملة وإرسال الإيميلات",
+            description: emailResult.message || "تم تسجيل المعاملة وإرسال الإيميلات بنجاح",
+          });
+        }
+      } else {
+        console.log('Email sending skipped - not requested or no emails provided');
+        toast({
+          title: "تم حفظ المعاملة",
+          description: "تم تسجيل معاملة الهاتف بنجاح",
+        });
+      }
+
       // Reset form
       setFormData({
         sellerName: '',
         sellerEmail: '',
-        sellerPhone: '',
         buyerName: '',
         buyerEmail: '',
         phoneModel: '',
         brand: '',
         imei: '',
         purchaseDate: new Date().toISOString().split('T')[0],
-        rating: 5
+        rating: 0
       });
-
-      toast({
-        title: "تم حفظ المعاملة بنجاح! ✅",
-        description: "تم توثيق المعاملة وحفظها في النظام الآمن",
-      });
-
+      setSendEmails(false);
+      
     } catch (error) {
-      console.error('Error saving transaction:', error);
+      console.error('Transaction submission error:', error);
       toast({
-        title: "خطأ في الحفظ",
-        description: "حدث خطأ أثناء حفظ المعاملة. يرجى المحاولة مرة أخرى",
+        title: "خطأ",
+        description: "حدث خطأ أثناء حفظ المعاملة",
         variant: "destructive"
       });
     } finally {
@@ -94,243 +226,250 @@ const TransactionForm = ({ onTransactionSave, disabled = false }: TransactionFor
     }
   };
 
-  const handleInputChange = (field: string, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleIdPhotoCapture = async (photo: string) => {
+    handleInputChange('buyerIdPhoto', photo);
+    
+    try {
+      const response = await supabase.functions.invoke('ocr-process', {
+        body: { imageData: photo }
+      });
+
+      if (response.data && response.data.name && response.data.name.trim()) {
+        handleInputChange('buyerName', response.data.name.trim());
+        toast({
+          title: "تم استخراج المعلومات",
+          description: "تم ملء اسم المشتري تلقائياً من بطاقة الهوية",
+        });
+      }
+    } catch (error) {
+      console.error('خطأ في معالجة OCR:', error);
+    }
+  };
+
+  const StarRating = ({ rating, onRatingChange }: { rating: number; onRatingChange: (rating: number) => void }) => {
+    return (
+      <div className="flex items-center space-x-1 space-x-reverse">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => onRatingChange(star)}
+            className={`text-2xl ${star <= rating ? 'text-yellow-400' : 'text-gray-300'} hover:text-yellow-400 transition-colors`}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+    );
   };
 
   return (
-    <Card className="holo-card">
-      <CardHeader>
-        <CardTitle className="text-primary glow-text font-['Orbitron'] flex items-center gap-3">
-          {disabled ? (
-            <>
-              <Lock className="text-amber-500" size={24} />
-              <span className="text-amber-600">معاملة جديدة (يتطلب تفعيل)</span>
-            </>
-          ) : (
-            <>
-              <Plus size={24} />
-              معاملة جديدة
-            </>
-          )}
-        </CardTitle>
-        
-        {!userActivation?.isActivated && (
-          <div className="text-sm text-muted-foreground">
-            المعاملات المتاحة: {userActivation ? userActivation.maxTrialTransactions - userActivation.trialTransactionsUsed : 0} من أصل {userActivation?.maxTrialTransactions || 3}
-          </div>
-        )}
-      </CardHeader>
-      
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Seller Information */}
-            <div className="space-y-4">
-              <h3 className="text-primary font-semibold border-b border-primary/20 pb-2">
-                بيانات البائع
-              </h3>
+    <div className="space-y-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <Card className="holo-card">
+        <CardHeader>
+          <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl flex justify-between items-center">
+            <span>{t('newTransactionPortal')}</span>
+            <Button 
+              onClick={() => navigate('/transactions')}
+              variant="outline"
+              className="text-sm"
+            >
+              عرض المعاملات
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  اسم البائع *
-                </label>
-                <input
-                  type="text"
+              <div className="space-y-2">
+                <Label htmlFor="seller" className="text-primary text-sm font-semibold">
+                  {t('sellerName')} *
+                </Label>
+                <Input
+                  id="seller"
+                  className="quantum-input"
+                  placeholder={`Enter ${t('sellerName').toLowerCase()}`}
                   value={formData.sellerName}
                   onChange={(e) => handleInputChange('sellerName', e.target.value)}
-                  className="quantum-input w-full"
-                  placeholder="أدخل اسم البائع"
-                  required
-                  disabled={disabled}
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  البريد الإلكتروني
-                </label>
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="sellerEmail" className="text-primary text-sm font-semibold">
+                  إيميل البائع (اختياري)
+                </Label>
+                <Input
+                  id="sellerEmail"
                   type="email"
+                  className="quantum-input"
+                  placeholder="seller@example.com"
                   value={formData.sellerEmail}
                   onChange={(e) => handleInputChange('sellerEmail', e.target.value)}
-                  className="quantum-input w-full"
-                  placeholder="seller@example.com"
-                  disabled={disabled}
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  رقم الهاتف
-                </label>
-                <input
-                  type="tel"
-                  value={formData.sellerPhone}
-                  onChange={(e) => handleInputChange('sellerPhone', e.target.value)}
-                  className="quantum-input w-full"
-                  placeholder="+213xxxxxxxxx"
-                  disabled={disabled}
-                />
-              </div>
-            </div>
-
-            {/* Buyer Information */}
-            <div className="space-y-4">
-              <h3 className="text-primary font-semibold border-b border-primary/20 pb-2">
-                بيانات المشتري
-              </h3>
-              
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  اسم المشتري *
-                </label>
-                <input
-                  type="text"
+              <div className="space-y-2">
+                <Label htmlFor="buyer" className="text-primary text-sm font-semibold">
+                  {t('buyerName')} *
+                </Label>
+                <Input
+                  id="buyer"
+                  className="quantum-input"
+                  placeholder={`Enter ${t('buyerName').toLowerCase()}`}
                   value={formData.buyerName}
                   onChange={(e) => handleInputChange('buyerName', e.target.value)}
-                  className="quantum-input w-full"
-                  placeholder="أدخل اسم المشتري"
-                  required
-                  disabled={disabled}
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  البريد الإلكتروني
-                </label>
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="buyerEmail" className="text-primary text-sm font-semibold">
+                  إيميل المشتري (اختياري)
+                </Label>
+                <Input
+                  id="buyerEmail"
                   type="email"
+                  className="quantum-input"
+                  placeholder="buyer@example.com"
                   value={formData.buyerEmail}
                   onChange={(e) => handleInputChange('buyerEmail', e.target.value)}
-                  className="quantum-input w-full"
-                  placeholder="buyer@example.com"
-                  disabled={disabled}
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  تاريخ الشراء
-                </label>
-                <input
-                  type="date"
-                  value={formData.purchaseDate}
-                  onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
-                  className="quantum-input w-full"
-                  disabled={disabled}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Device Information */}
-          <div className="space-y-4">
-            <h3 className="text-primary font-semibold border-b border-primary/20 pb-2">
-              بيانات الجهاز
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  العلامة التجارية *
-                </label>
-                <select
-                  value={formData.brand}
-                  onChange={(e) => handleInputChange('brand', e.target.value)}
-                  className="quantum-input w-full"
-                  required
-                  disabled={disabled}
-                >
-                  <option value="">اختر العلامة التجارية</option>
-                  {brands.map(brand => (
-                    <option key={brand} value={brand}>{brand}</option>
-                  ))}
-                </select>
+              <div className="space-y-2">
+                <Label htmlFor="brand" className="text-primary text-sm font-semibold">
+                  {t('phoneBrand')} *
+                </Label>
+                <Select onValueChange={(value) => handleInputChange('brand', value)}>
+                  <SelectTrigger className="quantum-input">
+                    <SelectValue placeholder="Select brand" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-primary/30">
+                    {phonebrands.map((brand) => (
+                      <SelectItem key={brand} value={brand} className="text-foreground hover:bg-primary/20">
+                        {brand}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  طراز الجهاز *
-                </label>
-                <select
+              <div className="space-y-2">
+                <Label htmlFor="model" className="text-primary text-sm font-semibold">
+                  {t('phoneModel')} *
+                </Label>
+                <Input
+                  id="model"
+                  className="quantum-input"
+                  placeholder="e.g., iPhone 15 Pro"
                   value={formData.phoneModel}
                   onChange={(e) => handleInputChange('phoneModel', e.target.value)}
-                  className="quantum-input w-full"
-                  required
-                  disabled={disabled}
-                >
-                  <option value="">اختر طراز الجهاز</option>
-                  {phoneModels.map(model => (
-                    <option key={model} value={model}>{model}</option>
-                  ))}
-                </select>
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="imei" className="text-primary text-sm font-semibold">
+                  {t('imei')} *
+                </Label>
+                <Input
+                  id="imei"
+                  className="quantum-input"
+                  placeholder="Enter 15-digit IMEI"
+                  value={formData.imei}
+                  onChange={(e) => handleInputChange('imei', e.target.value.replace(/\D/g, '').slice(0, 15))}
+                  maxLength={15}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="date" className="text-primary text-sm font-semibold">
+                  {t('purchaseDate')} *
+                </Label>
+                <Input
+                  id="date"
+                  type="date"
+                  className="quantum-input"
+                  value={formData.purchaseDate}
+                  onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
+                />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">
-                رقم IMEI *
-              </label>
-              <input
-                type="text"
-                value={formData.imei}
-                onChange={(e) => handleInputChange('imei', e.target.value)}
-                className="quantum-input w-full"
-                placeholder="أدخل رقم IMEI (15 رقم)"
-                maxLength={15}
-                required
-                disabled={disabled}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-primary text-sm font-semibold">
+                  قيم تجربة المعاملة
+                </Label>
+                <StarRating 
+                  rating={formData.rating || 0} 
+                  onRatingChange={(rating) => handleInputChange('rating', rating)} 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CameraCapture
+                title={t('buyerIdPhoto')}
+                onPhotoCapture={handleIdPhotoCapture}
+              />
+              
+              <SignaturePad
+                onSignatureCapture={(signature) => handleInputChange('signature', signature)}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">
-                تقييم المعاملة
-              </label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => handleInputChange('rating', star)}
-                    className={`text-2xl transition-colors ${
-                      star <= formData.rating ? 'text-yellow-400' : 'text-gray-300'
-                    }`}
-                    disabled={disabled}
-                  >
-                    ★
-                  </button>
-                ))}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <Checkbox
+                  id="sendEmails"
+                  checked={sendEmails}
+                  onCheckedChange={(checked) => setSendEmails(checked === true)}
+                />
+                <Label htmlFor="sendEmails" className="text-sm">
+                  إرسال إيصال المعاملة عبر الإيميل (اختياري)
+                </Label>
               </div>
+              
+              {sendEmails && !formData.sellerEmail && !formData.buyerEmail && (
+                <p className="text-yellow-600 text-sm">
+                  يرجى إدخال إيميل البائع أو المشتري لإرسال الإيصال
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-center pt-6">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    className="neural-btn w-full md:w-auto" 
+                    disabled={isSubmitting}
+                  >
+                    <span className="font-['Orbitron'] font-bold">
+                      {isSubmitting ? 'جاري المعالجة...' : t('processTransaction')}
+                    </span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-primary">تأكيد المعاملة</AlertDialogTitle>
+                    <AlertDialogDescription className="text-foreground">
+                      تأكد من صحة جميع المعلومات المدخلة. لن تتمكن من تعديل هذه المعاملة بعد حفظها.
+                      هل أنت متأكد من المتابعة؟
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleConfirmedSubmit} disabled={isSubmitting}>
+                      {isSubmitting ? 'جاري المعالجة...' : 'تأكيد المعاملة'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
-
-          <Button
-            type="submit"
-            disabled={isSubmitting || disabled}
-            className={`neural-btn w-full ${
-              disabled ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {disabled ? (
-              <>
-                <Lock size={16} className="mr-2" />
-                يتطلب تفعيل النسخة الكاملة
-              </>
-            ) : isSubmitting ? (
-              'جاري الحفظ...'
-            ) : (
-              <>
-                <Plus size={16} className="mr-2" />
-                حفظ المعاملة
-              </>
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

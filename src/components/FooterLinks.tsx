@@ -5,7 +5,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 const FooterLinks = () => {
   const { language, t } = useLanguage();
-  const currentYear = new Date().getFullYear();
 
   return (
     <footer className="mt-12 pt-8 border-t border-primary/20" dir={language === 'ar' ? 'rtl' : 'ltr'}>
@@ -53,7 +52,7 @@ const FooterLinks = () => {
       
       <div className="mt-8 pt-4 border-t border-primary/10 text-center">
         <p className="text-muted-foreground text-xs">
-          © {currentYear} {t('appTitle')}. {t('allRightsReserved')}
+          © 2024 {t('appTitle')}. {t('allRightsReserved')}
         </p>
       </div>
     </footer>

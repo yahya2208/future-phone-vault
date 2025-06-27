@@ -3,15 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useActivation } from '@/hooks/useActivation';
 import FuturisticHeader from '@/components/FuturisticHeader';
 import TransactionForm from '@/components/TransactionForm';
 import DashboardStats from '@/components/DashboardStats';
 import FooterLinks from '@/components/FooterLinks';
 import PrivacyNotification from '@/components/PrivacyNotification';
-import TrialStatus from '@/components/TrialStatus';
-import ActivationModal from '@/components/ActivationModal';
-import AdminCodePanel from '@/components/AdminCodePanel';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Transaction {
@@ -30,14 +26,7 @@ const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const { 
-    userActivation, 
-    canCreateTransaction, 
-    incrementTrialUsage, 
-    loading: activationLoading 
-  } = useActivation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [showActivationModal, setShowActivationModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -82,20 +71,7 @@ const Index = () => {
   };
 
   const handleTransactionSave = async (formData: any) => {
-    if (!user || !userActivation) return;
-
-    // Check if user can create transaction
-    if (!canCreateTransaction) {
-      setShowActivationModal(true);
-      return;
-    }
-
-    // If user is not activated and this would exceed trial limit
-    if (!userActivation.isActivated && 
-        userActivation.trialTransactionsUsed >= userActivation.maxTrialTransactions) {
-      setShowActivationModal(true);
-      return;
-    }
+    if (!user) return;
 
     const { error } = await supabase
       .from('transactions')
@@ -120,21 +96,10 @@ const Index = () => {
       return;
     }
 
-    // Increment trial usage if not activated
-    if (!userActivation.isActivated) {
-      await incrementTrialUsage();
-    }
-
     fetchTransactions();
-
-    // Show activation modal if trial is about to end
-    if (!userActivation.isActivated && 
-        userActivation.trialTransactionsUsed + 1 >= userActivation.maxTrialTransactions) {
-      setTimeout(() => setShowActivationModal(true), 1000);
-    }
   };
 
-  if (loading || activationLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-primary text-xl">جاري التحميل...</div>
@@ -166,24 +131,11 @@ const Index = () => {
     ? transactions.reduce((sum, t) => sum + (t.rating || 0), 0) / transactions.length 
     : 0;
 
-  const remainingTransactions = userActivation 
-    ? userActivation.maxTrialTransactions - userActivation.trialTransactionsUsed 
-    : 0;
-
   return (
     <div className="min-h-screen" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <PrivacyNotification />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <FuturisticHeader />
-        
-        {userActivation && <TrialStatus />}
-        
-        {/* Show admin panel if user is admin */}
-        {userActivation?.isAdmin && (
-          <div className="mb-8">
-            <AdminCodePanel />
-          </div>
-        )}
         
         <DashboardStats 
           totalTransactions={totalTransactions}
@@ -193,20 +145,11 @@ const Index = () => {
         />
         
         <div className="space-y-8">
-          <TransactionForm 
-            onTransactionSave={handleTransactionSave}
-            disabled={!canCreateTransaction}
-          />
+          <TransactionForm onTransactionSave={handleTransactionSave} />
         </div>
         
         <FooterLinks />
       </div>
-
-      <ActivationModal
-        isOpen={showActivationModal}
-        onClose={() => setShowActivationModal(false)}
-        remainingTransactions={remainingTransactions}
-      />
     </div>
   );
 };
