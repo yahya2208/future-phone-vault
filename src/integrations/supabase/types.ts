@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      activation_codes: {
+        Row: {
+          activated_at: string | null
+          code_hash: string
+          code_type: string | null
+          created_at: string
+          created_by_admin: boolean | null
+          expires_at: string
+          id: string
+          is_admin_code: boolean | null
+          is_used: boolean | null
+          notes: string | null
+          subscription_duration_months: number | null
+          user_email: string
+        }
+        Insert: {
+          activated_at?: string | null
+          code_hash: string
+          code_type?: string | null
+          created_at?: string
+          created_by_admin?: boolean | null
+          expires_at?: string
+          id?: string
+          is_admin_code?: boolean | null
+          is_used?: boolean | null
+          notes?: string | null
+          subscription_duration_months?: number | null
+          user_email: string
+        }
+        Update: {
+          activated_at?: string | null
+          code_hash?: string
+          code_type?: string | null
+          created_at?: string
+          created_by_admin?: boolean | null
+          expires_at?: string
+          id?: string
+          is_admin_code?: boolean | null
+          is_used?: boolean | null
+          notes?: string | null
+          subscription_duration_months?: number | null
+          user_email?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -30,6 +75,42 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string
+        }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          created_at: string
+          device_fingerprint: string | null
+          event_details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          risk_score: number | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint?: string | null
+          event_details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          risk_score?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string | null
+          event_details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          risk_score?: number | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -90,12 +171,96 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activations: {
+        Row: {
+          activated_at: string | null
+          activation_code_id: string | null
+          activation_type: string | null
+          created_at: string
+          device_fingerprint: string | null
+          id: string
+          is_activated: boolean | null
+          is_admin: boolean | null
+          max_trial_transactions: number | null
+          subscription_expires_at: string | null
+          trial_transactions_used: number | null
+          updated_at: string
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          activation_code_id?: string | null
+          activation_type?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          is_activated?: boolean | null
+          is_admin?: boolean | null
+          max_trial_transactions?: number | null
+          subscription_expires_at?: string | null
+          trial_transactions_used?: number | null
+          updated_at?: string
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          activation_code_id?: string | null
+          activation_type?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          is_activated?: boolean | null
+          is_admin?: boolean | null
+          max_trial_transactions?: number | null
+          subscription_expires_at?: string | null
+          trial_transactions_used?: number | null
+          updated_at?: string
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activations_activation_code_id_fkey"
+            columns: ["activation_code_id"]
+            isOneToOne: false
+            referencedRelation: "activation_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_activation_code: {
+        Args: { user_email: string }
+        Returns: string
+      }
+      generate_gift_codes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          gift_code: string
+          code_number: number
+        }[]
+      }
+      generate_lifetime_codes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          lifetime_code: string
+          code_number: number
+        }[]
+      }
+      generate_owner_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      validate_activation_code: {
+        Args: { input_code: string; user_email: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
