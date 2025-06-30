@@ -118,7 +118,6 @@ export type Database = {
         Row: {
           brand: string
           buyer_email: string | null
-          buyer_id_photo: string | null
           buyer_name: string
           created_at: string
           id: string
@@ -129,14 +128,13 @@ export type Database = {
           seller_email: string | null
           seller_name: string
           seller_phone: string | null
-          signature: string | null
+          simple_drawing: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           brand: string
           buyer_email?: string | null
-          buyer_id_photo?: string | null
           buyer_name: string
           created_at?: string
           id?: string
@@ -147,14 +145,13 @@ export type Database = {
           seller_email?: string | null
           seller_name: string
           seller_phone?: string | null
-          signature?: string | null
+          simple_drawing?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           brand?: string
           buyer_email?: string | null
-          buyer_id_photo?: string | null
           buyer_name?: string
           created_at?: string
           id?: string
@@ -165,7 +162,7 @@ export type Database = {
           seller_email?: string | null
           seller_name?: string
           seller_phone?: string | null
-          signature?: string | null
+          simple_drawing?: string | null
           updated_at?: string
           user_id?: string
         }

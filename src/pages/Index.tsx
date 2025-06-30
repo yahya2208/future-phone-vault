@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +19,7 @@ interface Transaction {
   purchaseDate: string;
   timestamp: Date;
   rating?: number;
+  simple_drawing?: string;
 }
 
 const Index = () => {
@@ -64,7 +64,8 @@ const Index = () => {
         imei: t.imei,
         purchaseDate: t.purchase_date,
         timestamp: new Date(t.created_at),
-        rating: t.rating
+        rating: t.rating,
+        simple_drawing: t.simple_drawing
       }));
       setTransactions(mappedTransactions);
     }
@@ -78,16 +79,12 @@ const Index = () => {
       .insert({
         user_id: user.id,
         seller_name: formData.sellerName,
-        seller_email: formData.sellerEmail,
-        seller_phone: formData.sellerPhone,
         buyer_name: formData.buyerName,
-        buyer_email: formData.buyerEmail,
         phone_model: formData.phoneModel,
         brand: formData.brand,
         imei: formData.imei,
         purchase_date: formData.purchaseDate,
-        buyer_id_photo: formData.buyerIdPhoto,
-        signature: formData.signature,
+        simple_drawing: formData.simpleDrawing,
         rating: formData.rating
       });
 

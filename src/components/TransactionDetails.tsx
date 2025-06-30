@@ -18,8 +18,7 @@ interface Transaction {
   sellerPhone?: string;
   sellerEmail?: string;
   buyerEmail?: string;
-  buyerIdPhoto?: string;
-  signature?: string;
+  simpleDrawing?: string;
 }
 
 interface TransactionDetailsProps {
@@ -55,6 +54,12 @@ const TransactionDetails: React.FC<TransactionDetailsProps> = ({ transaction, on
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-blue-700 dark:text-blue-300 text-sm">
+              <strong>ملاحظة:</strong> هذه المعلومات للتوثيق الشخصي فقط وليست وثيقة قانونية رسمية
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h3 className="text-primary font-semibold mb-2">
@@ -139,30 +144,18 @@ const TransactionDetails: React.FC<TransactionDetailsProps> = ({ transaction, on
             </div>
           </div>
 
-          {transaction.buyerIdPhoto && (
+          {transaction.simpleDrawing && (
             <div>
               <h3 className="text-primary font-semibold mb-2">
-                {language === 'ar' ? 'صورة هوية المشتري' : 'Buyer ID Photo'}
+                {language === 'ar' ? 'الرسم البسيط' : 'Simple Drawing'}
               </h3>
+              <p className="text-xs text-muted-foreground mb-2">
+                رسم بسيط للتذكر - ليس توقيعاً قانونياً
+              </p>
               <div className="border border-primary/20 rounded-lg p-2">
                 <img 
-                  src={transaction.buyerIdPhoto} 
-                  alt={language === 'ar' ? 'صورة هوية المشتري' : 'Buyer ID Photo'}
-                  className="max-w-full h-auto rounded"
-                />
-              </div>
-            </div>
-          )}
-
-          {transaction.signature && (
-            <div>
-              <h3 className="text-primary font-semibold mb-2">
-                {language === 'ar' ? 'التوقيع' : 'Signature'}
-              </h3>
-              <div className="border border-primary/20 rounded-lg p-2">
-                <img 
-                  src={transaction.signature} 
-                  alt={language === 'ar' ? 'التوقيع' : 'Signature'}
+                  src={transaction.simpleDrawing} 
+                  alt={language === 'ar' ? 'الرسم البسيط' : 'Simple Drawing'}
                   className="max-w-full h-auto rounded bg-white"
                 />
               </div>

@@ -5,11 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Eye } from 'lucide-react';
-import SearchTransactions, { SearchFilters } from '@/components/SearchTransactions';
-import ExportTransactions from '@/components/ExportTransactions';
+import { supabase } from '@/integrations/supabase/client';
 import TransactionDetails from '@/components/TransactionDetails';
+import ExportTransactions from '@/components/ExportTransactions';
+import SearchTransactions from '@/components/SearchTransactions';
 
 interface Transaction {
   id: string;
@@ -24,17 +24,17 @@ interface Transaction {
   sellerPhone?: string;
   sellerEmail?: string;
   buyerEmail?: string;
-  buyerIdPhoto?: string;
-  signature?: string;
+  simpleDrawing?: string;
 }
 
 const Transactions = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -51,6 +51,7 @@ const Transactions = () => {
   const fetchTransactions = async () => {
     if (!user) return;
     
+    setIsLoading(true);
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
@@ -59,6 +60,7 @@ const Transactions = () => {
 
     if (error) {
       console.error('Error fetching transactions:', error);
+      setIsLoading(false);
       return;
     }
 
@@ -73,56 +75,41 @@ const Transactions = () => {
         purchaseDate: t.purchase_date,
         timestamp: new Date(t.created_at),
         rating: t.rating,
-        sellerPhone: t.seller_phone || undefined,
+        sellerPhone: t.seller_phone,
         sellerEmail: t.seller_email,
         buyerEmail: t.buyer_email,
-        buyerIdPhoto: t.buyer_id_photo,
-        signature: t.signature
+        simpleDrawing: t.simple_drawing
       }));
       setTransactions(mappedTransactions);
       setFilteredTransactions(mappedTransactions);
     }
+    setIsLoading(false);
   };
 
-  const handleSearch = (filters: SearchFilters) => {
-    let filtered = [...transactions];
+  const handleSearch = (searchTerm: string, brandFilter: string, dateFilter: string) => {
+    let filtered = transactions;
 
-    if (filters.searchTerm) {
+    if (searchTerm) {
       filtered = filtered.filter(t => 
-        t.sellerName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        t.buyerName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        t.imei.includes(filters.searchTerm)
+        t.sellerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.phoneModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.imei.includes(searchTerm)
       );
     }
 
-    if (filters.brand) {
-      filtered = filtered.filter(t => t.brand === filters.brand);
+    if (brandFilter) {
+      filtered = filtered.filter(t => t.brand === brandFilter);
     }
 
-    if (filters.dateFrom) {
-      filtered = filtered.filter(t => t.purchaseDate >= filters.dateFrom);
-    }
-
-    if (filters.dateTo) {
-      filtered = filtered.filter(t => t.purchaseDate <= filters.dateTo);
+    if (dateFilter) {
+      filtered = filtered.filter(t => t.purchaseDate === dateFilter);
     }
 
     setFilteredTransactions(filtered);
   };
 
-  const handleClearSearch = () => {
-    setFilteredTransactions(transactions);
-  };
-
-  const renderStars = (rating: number = 0) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <span key={i} className={`text-sm ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}>
-        ★
-      </span>
-    ));
-  };
-
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-primary text-xl">جاري التحميل...</div>
@@ -150,12 +137,21 @@ const Transactions = () => {
         </Button>
       </div>
 
+      <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+        <p className="text-blue-700 dark:text-blue-300 text-sm">
+          <strong>ملاحظة:</strong> جميع المعاملات المسجلة هنا للتوثيق الشخصي فقط وليست وثائق قانونية رسمية
+        </p>
+      </div>
+
       <div className="space-y-6">
-        <SearchTransactions onSearch={handleSearch} onClear={handleClearSearch} />
+        <SearchTransactions 
+          transactions={transactions}
+          onSearch={handleSearch}
+        />
         
         <div className="flex justify-between items-center">
           <div className="text-muted-foreground">
-            عرض {filteredTransactions.length} من أصل {transactions.length} معاملة
+            إجمالي المعاملات: {filteredTransactions.length}
           </div>
           <ExportTransactions transactions={filteredTransactions} />
         </div>
@@ -163,27 +159,23 @@ const Transactions = () => {
         <Card className="holo-card">
           <CardHeader>
             <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl">
-              المعاملات ({filteredTransactions.length})
+              المعاملات المسجلة
             </CardTitle>
           </CardHeader>
           <CardContent>
             {filteredTransactions.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-muted-foreground text-lg">
-                  {transactions.length === 0 ? 'لا توجد معاملات مسجلة' : 'لا توجد نتائج تطابق البحث'}
-                </div>
-                <div className="text-accent text-sm mt-2">
-                  {transactions.length === 0 ? 'ابدأ بإضافة معاملتك الأولى' : 'جرب تعديل معايير البحث'}
-                </div>
+                <div className="text-muted-foreground text-lg">لا توجد معاملات مطابقة للبحث</div>
+                <div className="text-accent text-sm mt-2">جرب تعديل معايير البحث أو إضافة معاملة جديدة</div>
               </div>
             ) : (
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-4 max-h-96 overflow-y-auto">
                 {filteredTransactions.map((transaction) => (
                   <div
                     key={transaction.id}
                     className="p-4 bg-card/30 border border-primary/20 rounded-lg hover:border-primary/40 transition-all duration-300"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                       <div>
                         <div className="text-primary text-sm font-semibold">المشتري</div>
                         <div className="text-foreground">{transaction.buyerName}</div>
@@ -207,22 +199,12 @@ const Transactions = () => {
                           {new Date(transaction.timestamp).toLocaleTimeString('ar-SA')}
                         </div>
                       </div>
-
-                      <div>
-                        <div className="text-primary text-sm font-semibold">التقييم</div>
-                        <div className="flex gap-1 mt-1">
-                          {renderStars(transaction.rating)}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {transaction.rating || 0}/5
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-center">
+                      
+                      <div className="flex justify-center">
                         <Button
-                          onClick={() => setSelectedTransaction(transaction)}
                           variant="outline"
                           size="sm"
+                          onClick={() => setSelectedTransaction(transaction)}
                           className="flex items-center gap-2"
                         >
                           <Eye size={16} />
