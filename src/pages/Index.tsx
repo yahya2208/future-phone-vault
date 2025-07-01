@@ -58,7 +58,7 @@ const Index = () => {
     if (!user) return;
     
     try {
-      // استخدام raw SQL أو استعلام مباشر
+      // حساب المعاملات المستخدمة من جدول المعاملات
       const { data, error } = await supabase
         .from('transactions')
         .select('id')
@@ -108,7 +108,7 @@ const Index = () => {
         purchaseDate: t.purchase_date,
         timestamp: new Date(t.created_at),
         rating: t.rating,
-        customPhoneModel: t.custom_phone_model
+        customPhoneModel: t.phone_model // استخدام phone_model كبديل
       }));
       setTransactions(mappedTransactions);
     }
@@ -128,12 +128,11 @@ const Index = () => {
         user_id: user.id,
         seller_name: formData.sellerName,
         buyer_name: formData.buyerName,
-        phone_model: formData.phoneModel,
+        phone_model: formData.customPhoneModel || formData.phoneModel,
         brand: formData.brand,
         imei: formData.imei,
         purchase_date: formData.purchaseDate,
-        rating: formData.rating,
-        custom_phone_model: formData.customPhoneModel
+        rating: formData.rating
       });
 
     if (error) {

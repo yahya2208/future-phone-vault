@@ -19,7 +19,6 @@ interface UserProfileData {
   phone: string;
   location: string;
   subscription_status: string;
-  subscription_expires_at: string | null;
   trial_transactions_used: number;
   max_trial_transactions: number;
 }
@@ -32,7 +31,6 @@ const UserProfile = () => {
     phone: '',
     location: '',
     subscription_status: 'trial',
-    subscription_expires_at: null,
     trial_transactions_used: 0,
     max_trial_transactions: 3
   });
@@ -50,11 +48,11 @@ const UserProfile = () => {
 
   const fetchProfile = async () => {
     try {
-      // استخدام raw SQL للاستعلام المباشر
+      // استخدام جدول profiles الموجود بدلاً من user_profiles
       const { data, error } = await supabase
-        .rpc('execute_sql', {
-          query: `SELECT * FROM user_profiles WHERE user_id = '${user?.id}' LIMIT 1`
-        })
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -63,7 +61,16 @@ const UserProfile = () => {
       }
 
       if (data) {
-        setProfile(data);
+        setProfile({
+          display_name: data.username || '',
+          bio: '',
+          avatar_url: '',
+          phone: '',
+          location: '',
+          subscription_status: 'trial',
+          trial_transactions_used: 0,
+          max_trial_transactions: 3
+        });
       }
     } catch (error) {
       console.error('Error:', error);
@@ -77,30 +84,14 @@ const UserProfile = () => {
 
     setIsSaving(true);
     try {
-      // استخدام raw SQL للتحديث
-      const { error } = await supabase.rpc('execute_sql', {
-        query: `
-          INSERT INTO user_profiles (
-            user_id, display_name, bio, avatar_url, phone, location, updated_at
-          ) VALUES (
-            '${user.id}', 
-            '${profile.display_name}', 
-            '${profile.bio}', 
-            '${profile.avatar_url}', 
-            '${profile.phone}', 
-            '${profile.location}', 
-            '${new Date().toISOString()}'
-          )
-          ON CONFLICT (user_id) 
-          DO UPDATE SET 
-            display_name = EXCLUDED.display_name,
-            bio = EXCLUDED.bio,
-            avatar_url = EXCLUDED.avatar_url,
-            phone = EXCLUDED.phone,
-            location = EXCLUDED.location,
-            updated_at = EXCLUDED.updated_at
-        `
-      });
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          username: profile.display_name,
+          email: user.email || '',
+          updated_at: new Date().toISOString()
+        });
 
       if (error) {
         console.error('Error saving profile:', error);
@@ -253,12 +244,6 @@ const UserProfile = () => {
                 <strong>{language === 'ar' ? 'المعاملات المستخدمة:' : 'Transactions Used:'}</strong>{' '}
                 {profile.trial_transactions_used} / {profile.max_trial_transactions}
               </p>
-              {profile.subscription_expires_at && (
-                <p>
-                  <strong>{language === 'ar' ? 'ينتهي في:' : 'Expires:'}</strong>{' '}
-                  {new Date(profile.subscription_expires_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
-                </p>
-              )}
             </div>
           </div>
 
