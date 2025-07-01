@@ -27,15 +27,18 @@ interface SearchTransactionsProps {
 
 const SearchTransactions: React.FC<SearchTransactionsProps> = ({ transactions, onSearch }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [brandFilter, setBrandFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+  const [brandFilter, setBrandFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
 
   // Get unique brands and dates from transactions
   const uniqueBrands = [...new Set(transactions.map(t => t.brand))];
   const uniqueDates = [...new Set(transactions.map(t => t.purchaseDate))];
 
   useEffect(() => {
-    onSearch(searchTerm, brandFilter, dateFilter);
+    // Convert "all" back to empty string for the parent component
+    const actualBrandFilter = brandFilter === 'all' ? '' : brandFilter;
+    const actualDateFilter = dateFilter === 'all' ? '' : dateFilter;
+    onSearch(searchTerm, actualBrandFilter, actualDateFilter);
   }, [searchTerm, brandFilter, dateFilter, onSearch]);
 
   return (
@@ -63,7 +66,7 @@ const SearchTransactions: React.FC<SearchTransactionsProps> = ({ transactions, o
                 <SelectValue placeholder="تصفية بالعلامة التجارية" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع العلامات التجارية</SelectItem>
+                <SelectItem value="all">جميع العلامات التجارية</SelectItem>
                 {uniqueBrands.map((brand) => (
                   <SelectItem key={brand} value={brand}>
                     {brand}
@@ -79,7 +82,7 @@ const SearchTransactions: React.FC<SearchTransactionsProps> = ({ transactions, o
                 <SelectValue placeholder="تصفية بالتاريخ" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع التواريخ</SelectItem>
+                <SelectItem value="all">جميع التواريخ</SelectItem>
                 {uniqueDates.map((date) => (
                   <SelectItem key={date} value={date}>
                     {date}
