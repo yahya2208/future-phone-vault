@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +8,7 @@ import TransactionForm from '@/components/TransactionForm';
 import DashboardStats from '@/components/DashboardStats';
 import FooterLinks from '@/components/FooterLinks';
 import PrivacyNotification from '@/components/PrivacyNotification';
+import TrialNotification from '@/components/TrialNotification';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Transaction {
@@ -19,7 +21,6 @@ interface Transaction {
   purchaseDate: string;
   timestamp: Date;
   rating?: number;
-  simple_drawing?: string;
 }
 
 const Index = () => {
@@ -27,6 +28,8 @@ const Index = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactionsUsed, setTransactionsUsed] = useState(0);
+  const maxTransactions = 3; // Trial limit
 
   useEffect(() => {
     if (!loading && !user) {
@@ -64,15 +67,20 @@ const Index = () => {
         imei: t.imei,
         purchaseDate: t.purchase_date,
         timestamp: new Date(t.created_at),
-        rating: t.rating,
-        simple_drawing: t.simple_drawing
+        rating: t.rating
       }));
       setTransactions(mappedTransactions);
+      setTransactionsUsed(mappedTransactions.length);
     }
   };
 
   const handleTransactionSave = async (formData: any) => {
     if (!user) return;
+
+    if (transactionsUsed >= maxTransactions) {
+      console.log('Trial limit reached');
+      return;
+    }
 
     const { error } = await supabase
       .from('transactions')
@@ -84,7 +92,6 @@ const Index = () => {
         brand: formData.brand,
         imei: formData.imei,
         purchase_date: formData.purchaseDate,
-        simple_drawing: formData.simpleDrawing,
         rating: formData.rating
       });
 
@@ -99,7 +106,9 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-primary text-xl">جاري التحميل...</div>
+        <div className="text-primary text-xl">
+          {language === 'ar' ? 'جاري التحميل...' : 'Loading...'}
+        </div>
       </div>
     );
   }
@@ -134,6 +143,11 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <FuturisticHeader />
         
+        <TrialNotification 
+          transactionsUsed={transactionsUsed}
+          maxTransactions={maxTransactions}
+        />
+        
         <DashboardStats 
           totalTransactions={totalTransactions}
           topBrand={topBrand}
@@ -142,7 +156,11 @@ const Index = () => {
         />
         
         <div className="space-y-8">
-          <TransactionForm onTransactionSave={handleTransactionSave} />
+          <TransactionForm 
+            onTransactionSave={handleTransactionSave}
+            transactionsUsed={transactionsUsed}
+            maxTransactions={maxTransactions}
+          />
         </div>
         
         <FooterLinks />

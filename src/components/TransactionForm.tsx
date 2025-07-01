@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -19,7 +18,7 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from '@/components/ui/alert-dialog';
-import SimpleDrawingPad from './SimpleDrawingPad';
+import PhoneSelector from './PhoneSelector';
 
 interface TransactionData {
   sellerName: string;
@@ -28,12 +27,21 @@ interface TransactionData {
   brand: string;
   imei: string;
   purchaseDate: string;
-  simpleDrawing?: string;
   rating?: number;
   transactionId?: string;
 }
 
-const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: TransactionData) => void }) => {
+interface TransactionFormProps {
+  onTransactionSave: (data: TransactionData) => void;
+  transactionsUsed?: number;
+  maxTransactions?: number;
+}
+
+const TransactionForm: React.FC<TransactionFormProps> = ({ 
+  onTransactionSave, 
+  transactionsUsed = 0, 
+  maxTransactions = 3 
+}) => {
   const [formData, setFormData] = useState<TransactionData>({
     sellerName: '',
     buyerName: '',
@@ -49,11 +57,6 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
-  const phonebrands = [
-    'Apple', 'Samsung', 'Google', 'OnePlus', 'Xiaomi', 'Huawei', 
-    'Sony', 'Nokia', 'Motorola', 'Oppo', 'Vivo', 'Realme'
-  ];
-
   const handleInputChange = (field: keyof TransactionData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -62,13 +65,24 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
     return /^\d{15}$/.test(imei);
   };
 
+  const canAddTransaction = transactionsUsed < maxTransactions;
+
   const handleConfirmedSubmit = async () => {
+    if (!canAddTransaction) {
+      toast({
+        title: language === 'ar' ? "انتهت الفترة التجريبية" : "Trial Period Ended",
+        description: language === 'ar' ? "يرجى الاشتراك للمتابعة" : "Please subscribe to continue",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Validation
     if (!formData.sellerName || !formData.buyerName || !formData.phoneModel || 
         !formData.brand || !formData.imei || !formData.purchaseDate) {
       toast({
-        title: "خطأ في التحقق",
-        description: "جميع الحقول مطلوبة",
+        title: language === 'ar' ? "خطأ في التحقق" : "Validation Error",
+        description: language === 'ar' ? "جميع الحقول مطلوبة" : "All fields are required",
         variant: "destructive"
       });
       return;
@@ -76,8 +90,8 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
 
     if (!validateIMEI(formData.imei)) {
       toast({
-        title: "رقم IMEI غير صحيح",
-        description: "يجب أن يكون رقم IMEI مكوناً من 15 رقماً بالضبط",
+        title: language === 'ar' ? "رقم IMEI غير صحيح" : "Invalid IMEI",
+        description: language === 'ar' ? "يجب أن يكون رقم IMEI مكوناً من 15 رقماً بالضبط" : "IMEI must be exactly 15 digits",
         variant: "destructive"
       });
       return;
@@ -95,8 +109,8 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
       });
       
       toast({
-        title: "تم حفظ المعاملة",
-        description: "تم تسجيل معاملة الهاتف بنجاح - للتوثيق الشخصي فقط",
+        title: language === 'ar' ? "تم حفظ المعاملة" : "Transaction Saved",
+        description: language === 'ar' ? "تم تسجيل معاملة الهاتف بنجاح - للتوثيق الشخصي فقط" : "Phone transaction recorded successfully - for personal documentation only",
       });
 
       // Reset form
@@ -113,8 +127,8 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
     } catch (error) {
       console.error('Transaction submission error:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء حفظ المعاملة",
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: language === 'ar' ? "حدث خطأ أثناء حفظ المعاملة" : "An error occurred while saving the transaction",
         variant: "destructive"
       });
     } finally {
@@ -139,6 +153,17 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
     );
   };
 
+  const warningMessages = {
+    ar: {
+      title: "تنبيه",
+      message: "هذا التطبيق للتوثيق الشخصي فقط وليس للاستخدام القانوني الرسمي. لا يُعتبر التوثيق هنا بديلاً عن التوثيق القانوني الرسمي."
+    },
+    en: {
+      title: "Warning",
+      message: "This application is for personal documentation only and not for official legal use. The documentation here is not a substitute for official legal documentation."
+    }
+  };
+
   return (
     <div className="space-y-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <Card className="holo-card">
@@ -150,7 +175,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
               variant="outline"
               className="text-sm"
             >
-              عرض المعاملات
+              {language === 'ar' ? 'عرض المعاملات' : 'View Transactions'}
             </Button>
           </CardTitle>
         </CardHeader>
@@ -158,13 +183,11 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
           <div className="space-y-6">
             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 mb-6">
               <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                <strong>تنبيه:</strong> هذا التطبيق للتوثيق الشخصي فقط وليس للاستخدام القانوني الرسمي. 
-                لا يُعتبر التوثيق هنا بديلاً عن التوثيق القانوني الرسمي.
+                <strong>{warningMessages[language].title}:</strong> {warningMessages[language].message}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
               <div className="space-y-2">
                 <Label htmlFor="seller" className="text-primary text-sm font-semibold">
                   {t('sellerName')} *
@@ -175,6 +198,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
                   placeholder={`Enter ${t('sellerName').toLowerCase()}`}
                   value={formData.sellerName}
                   onChange={(e) => handleInputChange('sellerName', e.target.value)}
+                  disabled={!canAddTransaction}
                 />
               </div>
 
@@ -188,40 +212,19 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
                   placeholder={`Enter ${t('buyerName').toLowerCase()}`}
                   value={formData.buyerName}
                   onChange={(e) => handleInputChange('buyerName', e.target.value)}
+                  disabled={!canAddTransaction}
                 />
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="brand" className="text-primary text-sm font-semibold">
-                  {t('phoneBrand')} *
-                </Label>
-                <Select onValueChange={(value) => handleInputChange('brand', value)}>
-                  <SelectTrigger className="quantum-input">
-                    <SelectValue placeholder="Select brand" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-primary/30">
-                    {phonebrands.map((brand) => (
-                      <SelectItem key={brand} value={brand} className="text-foreground hover:bg-primary/20">
-                        {brand}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <PhoneSelector
+              selectedBrand={formData.brand}
+              selectedModel={formData.phoneModel}
+              onBrandChange={(brand) => handleInputChange('brand', brand)}
+              onModelChange={(model) => handleInputChange('phoneModel', model)}
+            />
 
-              <div className="space-y-2">
-                <Label htmlFor="model" className="text-primary text-sm font-semibold">
-                  {t('phoneModel')} *
-                </Label>
-                <Input
-                  id="model"
-                  className="quantum-input"
-                  placeholder="e.g., iPhone 15 Pro"
-                  value={formData.phoneModel}
-                  onChange={(e) => handleInputChange('phoneModel', e.target.value)}
-                />
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="imei" className="text-primary text-sm font-semibold">
                   {t('imei')} *
@@ -233,6 +236,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
                   value={formData.imei}
                   onChange={(e) => handleInputChange('imei', e.target.value.replace(/\D/g, '').slice(0, 15))}
                   maxLength={15}
+                  disabled={!canAddTransaction}
                 />
               </div>
 
@@ -246,6 +250,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
                   className="quantum-input"
                   value={formData.purchaseDate}
                   onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
+                  disabled={!canAddTransaction}
                 />
               </div>
             </div>
@@ -253,7 +258,7 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-primary text-sm font-semibold">
-                  قيم تجربة المعاملة
+                  {language === 'ar' ? 'قيم تجربة المعاملة' : 'Rate Transaction Experience'}
                 </Label>
                 <StarRating 
                   rating={formData.rating || 0} 
@@ -262,37 +267,47 @@ const TransactionForm = ({ onTransactionSave }: { onTransactionSave: (data: Tran
               </div>
             </div>
 
-            <SimpleDrawingPad
-              onDrawingCapture={(drawing) => handleInputChange('simpleDrawing', drawing)}
-            />
-
             <div className="flex justify-center pt-6">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button 
                     className="neural-btn w-full md:w-auto" 
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !canAddTransaction}
                   >
                     <span className="font-['Orbitron'] font-bold">
-                      {isSubmitting ? 'جاري المعالجة...' : t('processTransaction')}
+                      {isSubmitting ? (language === 'ar' ? 'جاري المعالجة...' : 'Processing...') : t('processTransaction')}
                     </span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent dir={language === 'ar' ? 'rtl' : 'ltr'}>
                   <AlertDialogHeader>
-                    <AlertDialogTitle className="text-primary">تأكيد المعاملة</AlertDialogTitle>
+                    <AlertDialogTitle className="text-primary">
+                      {language === 'ar' ? 'تأكيد المعاملة' : 'Confirm Transaction'}
+                    </AlertDialogTitle>
                     <AlertDialogDescription className="text-foreground">
-                      تأكد من صحة جميع المعلومات المدخلة. لن تتمكن من تعديل هذه المعاملة بعد حفظها.
-                      <br /><br />
-                      <strong>تنبيه:</strong> هذا التوثيق للاستخدام الشخصي فقط وليس وثيقة قانونية رسمية.
-                      <br />
-                      هل أنت متأكد من المتابعة؟
+                      {language === 'ar' ? (
+                        <>
+                          تأكد من صحة جميع المعلومات المدخلة. لن تتمكن من تعديل هذه المعاملة بعد حفظها.
+                          <br /><br />
+                          <strong>تنبيه:</strong> هذا التوثيق للاستخدام الشخصي فقط وليس وثيقة قانونية رسمية.
+                          <br />
+                          هل أنت متأكد من المتابعة؟
+                        </>
+                      ) : (
+                        <>
+                          Confirm all entered information is correct. You won't be able to edit this transaction after saving.
+                          <br /><br />
+                          <strong>Warning:</strong> This documentation is for personal use only and not an official legal document.
+                          <br />
+                          Are you sure you want to continue?
+                        </>
+                      )}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogCancel>{language === 'ar' ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
                     <AlertDialogAction onClick={handleConfirmedSubmit} disabled={isSubmitting}>
-                      {isSubmitting ? 'جاري المعالجة...' : 'تأكيد المعاملة'}
+                      {isSubmitting ? (language === 'ar' ? 'جاري المعالجة...' : 'Processing...') : (language === 'ar' ? 'تأكيد المعاملة' : 'Confirm Transaction')}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

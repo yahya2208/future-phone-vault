@@ -24,7 +24,6 @@ interface Transaction {
   sellerPhone?: string;
   sellerEmail?: string;
   buyerEmail?: string;
-  simpleDrawing?: string;
 }
 
 const Transactions = () => {
@@ -77,8 +76,7 @@ const Transactions = () => {
         rating: t.rating,
         sellerPhone: t.seller_phone,
         sellerEmail: t.seller_email,
-        buyerEmail: t.buyer_email,
-        simpleDrawing: t.simple_drawing
+        buyerEmail: t.buyer_email
       }));
       setTransactions(mappedTransactions);
       setFilteredTransactions(mappedTransactions);
@@ -112,7 +110,9 @@ const Transactions = () => {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-primary text-xl">جاري التحميل...</div>
+        <div className="text-primary text-xl">
+          {language === 'ar' ? 'جاري التحميل...' : 'Loading...'}
+        </div>
       </div>
     );
   }
@@ -121,11 +121,44 @@ const Transactions = () => {
     return null;
   }
 
+  const messages = {
+    ar: {
+      title: 'سجل المعاملات',
+      back: 'العودة للرئيسية',
+      notice: 'ملاحظة: جميع المعاملات المسجلة هنا للتوثيق الشخصي فقط وليست وثائق قانونية رسمية',
+      total: 'إجمالي المعاملات',
+      registered: 'المعاملات المسجلة',
+      noTransactions: 'لا توجد معاملات مطابقة للبحث',
+      tryModifying: 'جرب تعديل معايير البحث أو إضافة معاملة جديدة',
+      buyer: 'المشتري',
+      from: 'من',
+      device: 'الجهاز',
+      date: 'التاريخ',
+      viewDetails: 'عرض التفاصيل'
+    },
+    en: {
+      title: 'Transaction Log',
+      back: 'Back to Home',
+      notice: 'Note: All transactions recorded here are for personal documentation only and are not official legal documents',
+      total: 'Total Transactions',
+      registered: 'Registered Transactions',
+      noTransactions: 'No transactions match the search',
+      tryModifying: 'Try modifying search criteria or add a new transaction',
+      buyer: 'Buyer',
+      from: 'from',
+      device: 'Device',
+      date: 'Date',
+      viewDetails: 'View Details'
+    }
+  };
+
+  const msg = messages[language];
+
   return (
     <div className="min-h-screen container mx-auto px-4 py-8" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-primary glow-text font-['Orbitron']">
-          سجل المعاملات
+          {msg.title}
         </h1>
         <Button 
           onClick={() => navigate('/')}
@@ -133,13 +166,13 @@ const Transactions = () => {
           className="flex items-center gap-2"
         >
           <ArrowLeft size={16} />
-          العودة للرئيسية
+          {msg.back}
         </Button>
       </div>
 
       <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
         <p className="text-blue-700 dark:text-blue-300 text-sm">
-          <strong>ملاحظة:</strong> جميع المعاملات المسجلة هنا للتوثيق الشخصي فقط وليست وثائق قانونية رسمية
+          <strong>{language === 'ar' ? 'ملاحظة:' : 'Note:'}</strong> {msg.notice}
         </p>
       </div>
 
@@ -151,7 +184,7 @@ const Transactions = () => {
         
         <div className="flex justify-between items-center">
           <div className="text-muted-foreground">
-            إجمالي المعاملات: {filteredTransactions.length}
+            {msg.total}: {filteredTransactions.length}
           </div>
           <ExportTransactions transactions={filteredTransactions} />
         </div>
@@ -159,14 +192,14 @@ const Transactions = () => {
         <Card className="holo-card">
           <CardHeader>
             <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl">
-              المعاملات المسجلة
+              {msg.registered}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {filteredTransactions.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-muted-foreground text-lg">لا توجد معاملات مطابقة للبحث</div>
-                <div className="text-accent text-sm mt-2">جرب تعديل معايير البحث أو إضافة معاملة جديدة</div>
+                <div className="text-muted-foreground text-lg">{msg.noTransactions}</div>
+                <div className="text-accent text-sm mt-2">{msg.tryModifying}</div>
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -177,15 +210,15 @@ const Transactions = () => {
                   >
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                       <div>
-                        <div className="text-primary text-sm font-semibold">المشتري</div>
+                        <div className="text-primary text-sm font-semibold">{msg.buyer}</div>
                         <div className="text-foreground">{transaction.buyerName}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          من {transaction.sellerName}
+                          {msg.from} {transaction.sellerName}
                         </div>
                       </div>
                       
                       <div>
-                        <div className="text-primary text-sm font-semibold">الجهاز</div>
+                        <div className="text-primary text-sm font-semibold">{msg.device}</div>
                         <div className="text-foreground">{transaction.brand} {transaction.phoneModel}</div>
                         <div className="text-xs text-accent mt-1">
                           IMEI: {transaction.imei.slice(0, 8)}...
@@ -193,10 +226,10 @@ const Transactions = () => {
                       </div>
                       
                       <div>
-                        <div className="text-primary text-sm font-semibold">التاريخ</div>
+                        <div className="text-primary text-sm font-semibold">{msg.date}</div>
                         <div className="text-foreground">{transaction.purchaseDate}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          {new Date(transaction.timestamp).toLocaleTimeString('ar-SA')}
+                          {new Date(transaction.timestamp).toLocaleTimeString(language === 'ar' ? 'ar-SA' : 'en-US')}
                         </div>
                       </div>
                       
@@ -208,7 +241,7 @@ const Transactions = () => {
                           className="flex items-center gap-2"
                         >
                           <Eye size={16} />
-                          عرض التفاصيل
+                          {msg.viewDetails}
                         </Button>
                       </div>
                     </div>
