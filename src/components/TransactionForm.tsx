@@ -29,6 +29,7 @@ interface TransactionData {
   purchaseDate: string;
   rating?: number;
   transactionId?: string;
+  customPhoneModel?: string;
 }
 
 interface TransactionFormProps {
@@ -49,12 +50,13 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     brand: '',
     imei: '',
     purchaseDate: new Date().toISOString().split('T')[0],
-    rating: 0
+    rating: 0,
+    customPhoneModel: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const navigate = useNavigate();
 
   const handleInputChange = (field: keyof TransactionData, value: string | number) => {
@@ -71,14 +73,17 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     if (!canAddTransaction) {
       toast({
         title: language === 'ar' ? "انتهت الفترة التجريبية" : "Trial Period Ended",
-        description: language === 'ar' ? "يرجى الاشتراك للمتابعة" : "Please subscribe to continue",
+        description: language === 'ar' ? "يرجى شراء كود تفعيل للمتابعة" : "Please purchase activation code to continue",
         variant: "destructive"
       });
       return;
     }
 
+    // Use custom model if provided, otherwise use selected model
+    const finalPhoneModel = formData.customPhoneModel || formData.phoneModel;
+
     // Validation
-    if (!formData.sellerName || !formData.buyerName || !formData.phoneModel || 
+    if (!formData.sellerName || !formData.buyerName || !finalPhoneModel || 
         !formData.brand || !formData.imei || !formData.purchaseDate) {
       toast({
         title: language === 'ar' ? "خطأ في التحقق" : "Validation Error",
@@ -105,6 +110,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       
       await onTransactionSave({
         ...formData,
+        phoneModel: finalPhoneModel,
         transactionId
       });
       
@@ -121,7 +127,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
         brand: '',
         imei: '',
         purchaseDate: new Date().toISOString().split('T')[0],
-        rating: 0
+        rating: 0,
+        customPhoneModel: ''
       });
       
     } catch (error) {
@@ -169,7 +176,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       <Card className="holo-card">
         <CardHeader>
           <CardTitle className="text-primary glow-text font-['Orbitron'] text-xl flex justify-between items-center">
-            <span>{t('newTransactionPortal')}</span>
+            <span>{language === 'ar' ? 'بوابة المعاملات الجديدة' : 'New Transaction Portal'}</span>
             <Button 
               onClick={() => navigate('/transactions')}
               variant="outline"
@@ -190,12 +197,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="seller" className="text-primary text-sm font-semibold">
-                  {t('sellerName')} *
+                  {language === 'ar' ? 'اسم البائع' : 'Seller Name'} *
                 </Label>
                 <Input
                   id="seller"
                   className="quantum-input"
-                  placeholder={`Enter ${t('sellerName').toLowerCase()}`}
+                  placeholder={language === 'ar' ? 'أدخل اسم البائع' : 'Enter seller name'}
                   value={formData.sellerName}
                   onChange={(e) => handleInputChange('sellerName', e.target.value)}
                   disabled={!canAddTransaction}
@@ -204,12 +211,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="buyer" className="text-primary text-sm font-semibold">
-                  {t('buyerName')} *
+                  {language === 'ar' ? 'اسم المشتري' : 'Buyer Name'} *
                 </Label>
                 <Input
                   id="buyer"
                   className="quantum-input"
-                  placeholder={`Enter ${t('buyerName').toLowerCase()}`}
+                  placeholder={language === 'ar' ? 'أدخل اسم المشتري' : 'Enter buyer name'}
                   value={formData.buyerName}
                   onChange={(e) => handleInputChange('buyerName', e.target.value)}
                   disabled={!canAddTransaction}
@@ -220,14 +227,16 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             <PhoneSelector
               selectedBrand={formData.brand}
               selectedModel={formData.phoneModel}
+              customModel={formData.customPhoneModel || ''}
               onBrandChange={(brand) => handleInputChange('brand', brand)}
               onModelChange={(model) => handleInputChange('phoneModel', model)}
+              onCustomModelChange={(customModel) => handleInputChange('customPhoneModel', customModel)}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="imei" className="text-primary text-sm font-semibold">
-                  {t('imei')} *
+                  {language === 'ar' ? 'رقم IMEI' : 'IMEI Number'} *
                 </Label>
                 <Input
                   id="imei"
@@ -242,7 +251,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="date" className="text-primary text-sm font-semibold">
-                  {t('purchaseDate')} *
+                  {language === 'ar' ? 'تاريخ الشراء' : 'Purchase Date'} *
                 </Label>
                 <Input
                   id="date"
@@ -275,7 +284,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                     disabled={isSubmitting || !canAddTransaction}
                   >
                     <span className="font-['Orbitron'] font-bold">
-                      {isSubmitting ? (language === 'ar' ? 'جاري المعالجة...' : 'Processing...') : t('processTransaction')}
+                      {isSubmitting ? (language === 'ar' ? 'جاري المعالجة...' : 'Processing...') : (language === 'ar' ? 'معالجة المعاملة' : 'Process Transaction')}
                     </span>
                   </Button>
                 </AlertDialogTrigger>

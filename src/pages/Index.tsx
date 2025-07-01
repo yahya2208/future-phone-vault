@@ -21,6 +21,13 @@ interface Transaction {
   purchaseDate: string;
   timestamp: Date;
   rating?: number;
+  customPhoneModel?: string;
+}
+
+interface UserProfile {
+  subscription_status: string;
+  trial_transactions_used: number;
+  max_trial_transactions: number;
 }
 
 const Index = () => {
@@ -28,8 +35,11 @@ const Index = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [transactionsUsed, setTransactionsUsed] = useState(0);
-  const maxTransactions = 3; // Trial limit
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    subscription_status: 'trial',
+    trial_transactions_used: 0,
+    max_trial_transactions: 3
+  });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -39,9 +49,43 @@ const Index = () => {
 
   useEffect(() => {
     if (user) {
+      fetchUserProfile();
       fetchTransactions();
     }
   }, [user]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('subscription_status, trial_transactions_used, max_trial_transactions')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching user profile:', error);
+      return;
+    }
+
+    if (data) {
+      setUserProfile(data);
+    } else {
+      // Create default profile if doesn't exist
+      const { error: insertError } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: user.id,
+          subscription_status: 'trial',
+          trial_transactions_used: 0,
+          max_trial_transactions: 3
+        });
+      
+      if (insertError) {
+        console.error('Error creating user profile:', insertError);
+      }
+    }
+  };
 
   const fetchTransactions = async () => {
     if (!user) return;
@@ -67,17 +111,17 @@ const Index = () => {
         imei: t.imei,
         purchaseDate: t.purchase_date,
         timestamp: new Date(t.created_at),
-        rating: t.rating
+        rating: t.rating,
+        customPhoneModel: t.custom_phone_model
       }));
       setTransactions(mappedTransactions);
-      setTransactionsUsed(mappedTransactions.length);
     }
   };
 
   const handleTransactionSave = async (formData: any) => {
     if (!user) return;
 
-    if (transactionsUsed >= maxTransactions) {
+    if (userProfile.subscription_status === 'trial' && userProfile.trial_transactions_used >= userProfile.max_trial_transactions) {
       console.log('Trial limit reached');
       return;
     }
@@ -92,7 +136,8 @@ const Index = () => {
         brand: formData.brand,
         imei: formData.imei,
         purchase_date: formData.purchaseDate,
-        rating: formData.rating
+        rating: formData.rating,
+        custom_phone_model: formData.customPhoneModel
       });
 
     if (error) {
@@ -100,6 +145,17 @@ const Index = () => {
       return;
     }
 
+    // Update trial transactions count if on trial
+    if (userProfile.subscription_status === 'trial') {
+      await supabase
+        .from('user_profiles')
+        .update({
+          trial_transactions_used: userProfile.trial_transactions_used + 1
+        })
+        .eq('user_id', user.id);
+    }
+
+    fetchUserProfile();
     fetchTransactions();
   };
 
@@ -144,8 +200,8 @@ const Index = () => {
         <FuturisticHeader />
         
         <TrialNotification 
-          transactionsUsed={transactionsUsed}
-          maxTransactions={maxTransactions}
+          transactionsUsed={userProfile.trial_transactions_used}
+          maxTransactions={userProfile.max_trial_transactions}
         />
         
         <DashboardStats 
@@ -158,8 +214,8 @@ const Index = () => {
         <div className="space-y-8">
           <TransactionForm 
             onTransactionSave={handleTransactionSave}
-            transactionsUsed={transactionsUsed}
-            maxTransactions={maxTransactions}
+            transactionsUsed={userProfile.trial_transactions_used}
+            maxTransactions={userProfile.max_trial_transactions}
           />
         </div>
         
