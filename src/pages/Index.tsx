@@ -57,33 +57,29 @@ const Index = () => {
   const fetchUserProfile = async () => {
     if (!user) return;
     
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('subscription_status, trial_transactions_used, max_trial_transactions')
-      .eq('user_id', user.id)
-      .single();
+    try {
+      // استخدام raw SQL أو استعلام مباشر
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('user_id', user.id);
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching user profile:', error);
-      return;
-    }
-
-    if (data) {
-      setUserProfile(data);
-    } else {
-      // Create default profile if doesn't exist
-      const { error: insertError } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: user.id,
-          subscription_status: 'trial',
-          trial_transactions_used: 0,
-          max_trial_transactions: 3
-        });
-      
-      if (insertError) {
-        console.error('Error creating user profile:', insertError);
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return;
       }
+
+      // حساب المعاملات المستخدمة
+      const transactionCount = data?.length || 0;
+      
+      setUserProfile({
+        subscription_status: 'trial',
+        trial_transactions_used: transactionCount,
+        max_trial_transactions: 3
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
     }
   };
 
@@ -143,16 +139,6 @@ const Index = () => {
     if (error) {
       console.error('Error saving transaction:', error);
       return;
-    }
-
-    // Update trial transactions count if on trial
-    if (userProfile.subscription_status === 'trial') {
-      await supabase
-        .from('user_profiles')
-        .update({
-          trial_transactions_used: userProfile.trial_transactions_used + 1
-        })
-        .eq('user_id', user.id);
     }
 
     fetchUserProfile();

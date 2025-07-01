@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Camera, User } from 'lucide-react';
+import { User } from 'lucide-react';
 
 interface UserProfileData {
   display_name: string;
@@ -50,10 +50,11 @@ const UserProfile = () => {
 
   const fetchProfile = async () => {
     try {
+      // استخدام raw SQL للاستعلام المباشر
       const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user?.id)
+        .rpc('execute_sql', {
+          query: `SELECT * FROM user_profiles WHERE user_id = '${user?.id}' LIMIT 1`
+        })
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -76,17 +77,30 @@ const UserProfile = () => {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: user.id,
-          display_name: profile.display_name,
-          bio: profile.bio,
-          avatar_url: profile.avatar_url,
-          phone: profile.phone,
-          location: profile.location,
-          updated_at: new Date().toISOString()
-        });
+      // استخدام raw SQL للتحديث
+      const { error } = await supabase.rpc('execute_sql', {
+        query: `
+          INSERT INTO user_profiles (
+            user_id, display_name, bio, avatar_url, phone, location, updated_at
+          ) VALUES (
+            '${user.id}', 
+            '${profile.display_name}', 
+            '${profile.bio}', 
+            '${profile.avatar_url}', 
+            '${profile.phone}', 
+            '${profile.location}', 
+            '${new Date().toISOString()}'
+          )
+          ON CONFLICT (user_id) 
+          DO UPDATE SET 
+            display_name = EXCLUDED.display_name,
+            bio = EXCLUDED.bio,
+            avatar_url = EXCLUDED.avatar_url,
+            phone = EXCLUDED.phone,
+            location = EXCLUDED.location,
+            updated_at = EXCLUDED.updated_at
+        `
+      });
 
       if (error) {
         console.error('Error saving profile:', error);

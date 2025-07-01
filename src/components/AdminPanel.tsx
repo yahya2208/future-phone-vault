@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Download, Key, Users } from 'lucide-react';
+import { Download, Key } from 'lucide-react';
 
 const AdminPanel = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -16,7 +16,7 @@ const AdminPanel = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
 
-  useEffect(() => {
+  React.useEffect(() => {
     checkAdminStatus();
   }, [user]);
 
@@ -29,19 +29,25 @@ const AdminPanel = () => {
   const generateActivationCodes = async () => {
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.rpc('generate_activation_codes', { count_codes: 200 });
+      const codes: string[] = [];
+      
+      // توليد 200 كود
+      for (let i = 0; i < 200; i++) {
+        const code = `PV-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+        
+        // إدراج الكود في قاعدة البيانات
+        const { error } = await supabase
+          .from('activation_codes')
+          .insert({
+            code: code,
+            subscription_duration_months: 12
+          });
 
-      if (error) {
-        console.error('Error generating codes:', error);
-        toast({
-          title: language === 'ar' ? "خطأ" : "Error",
-          description: language === 'ar' ? "حدث خطأ أثناء توليد الأكواد" : "Error generating codes",
-          variant: "destructive"
-        });
-        return;
+        if (!error) {
+          codes.push(code);
+        }
       }
 
-      const codes = data.map((row: any) => row.activation_code);
       setActivationCodes(codes);
       
       toast({

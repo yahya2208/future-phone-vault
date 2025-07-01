@@ -38,13 +38,35 @@ const ActivationCodeInput = () => {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.rpc('activate_user_code', {
-        user_email: user.email,
-        activation_code: activationCode.trim()
-      });
+      // البحث عن الكود في قاعدة البيانات
+      const { data: codeData, error: codeError } = await supabase
+        .from('activation_codes')
+        .select('*')
+        .eq('code', activationCode.trim())
+        .eq('is_used', false)
+        .single();
 
-      if (error) {
-        console.error('Activation error:', error);
+      if (codeError || !codeData) {
+        toast({
+          title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
+          description: language === 'ar' ? "كود غير صحيح أو منتهي الصلاحية" : "Invalid or expired code",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // تحديث الكود كمستخدم
+      const { error: updateError } = await supabase
+        .from('activation_codes')
+        .update({
+          is_used: true,
+          used_by_email: user.email,
+          used_at: new Date().toISOString()
+        })
+        .eq('id', codeData.id);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
         toast({
           title: language === 'ar' ? "خطأ" : "Error",
           description: language === 'ar' ? "حدث خطأ أثناء التفعيل" : "An error occurred during activation",
@@ -53,21 +75,33 @@ const ActivationCodeInput = () => {
         return;
       }
 
-      if (data.success) {
-        toast({
-          title: language === 'ar' ? "نجح التفعيل!" : "Activation Successful!",
-          description: data.message
+      // تحديث ملف المستخدم
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + (codeData.subscription_duration_months || 12));
+
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user.id,
+          subscription_status: 'active',
+          subscription_expires_at: expiresAt.toISOString(),
+          max_trial_transactions: 999999,
+          updated_at: new Date().toISOString()
         });
-        setActivationCode('');
-        // إعادة تحميل الصفحة لتحديث حالة الاشتراك
-        window.location.reload();
-      } else {
-        toast({
-          title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
-          description: data.message,
-          variant: "destructive"
-        });
+
+      if (profileError) {
+        console.error('Profile update error:', profileError);
       }
+
+      toast({
+        title: language === 'ar' ? "نجح التفعيل!" : "Activation Successful!",
+        description: language === 'ar' ? "تم تفعيل حسابك بنجاح!" : "Your account has been activated successfully!"
+      });
+      
+      setActivationCode('');
+      // إعادة تحميل الصفحة لتحديث حالة الاشتراك
+      window.location.reload();
+
     } catch (error) {
       console.error('Activation error:', error);
       toast({

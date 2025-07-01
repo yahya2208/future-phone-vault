@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { X } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { X, AlertTriangle } from 'lucide-react';
 
 const PrivacyNotification = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -24,40 +26,43 @@ const PrivacyNotification = () => {
   const messages = {
     ar: {
       title: 'إشعار الخصوصية',
-      content: 'نحن نحترم خصوصيتك. جميع البيانات المدخلة تُحفظ محلياً على جهازك ولا تُشارك مع أطراف ثالثة. هذا التطبيق مخصص للاستخدام الشخصي فقط.',
-      understand: 'فهمت'
+      description: 'هذا التطبيق مخصص للتوثيق الشخصي فقط وليس للاستخدام القانوني الرسمي. نحن نحترم خصوصيتك ولا نشارك بياناتك مع أي طرف ثالث.',
+      button: 'فهمت'
     },
     en: {
       title: 'Privacy Notice',
-      content: 'We respect your privacy. All entered data is stored locally on your device and is not shared with third parties. This application is intended for personal use only.',
-      understand: 'I Understand'
+      description: 'This application is for personal documentation only and not for official legal use. We respect your privacy and do not share your data with any third parties.',
+      button: 'Got it'
     }
   };
 
-  const msg = messages[language];
-
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 shadow-lg">
-      <div className="container mx-auto flex items-center justify-between" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="flex-1">
-          <h4 className="font-semibold mb-1">{msg.title}</h4>
-          <p className="text-sm opacity-90">{msg.content}</p>
-        </div>
-        <div className="flex items-center gap-4 ml-4">
-          <button
+    <div className="fixed top-0 left-0 right-0 z-50 p-4">
+      <Alert className="max-w-4xl mx-auto bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
+        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+        <AlertDescription className="text-yellow-700 dark:text-yellow-300 pr-8">
+          <div className="flex justify-between items-start">
+            <div>
+              <strong>{messages[language].title}:</strong> {messages[language].description}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClose}
+              className="absolute top-2 right-2 text-yellow-600 hover:text-yellow-800"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
             onClick={handleClose}
-            className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            size="sm"
+            className="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white"
           >
-            {msg.understand}
-          </button>
-          <button
-            onClick={handleClose}
-            className="hover:bg-white/20 p-2 rounded-full transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-      </div>
+            {messages[language].button}
+          </Button>
+        </AlertDescription>
+      </Alert>
     </div>
   );
 };
