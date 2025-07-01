@@ -26,6 +26,37 @@ const ActivationCodeInput = () => {
       return;
     }
 
+    // التحقق إذا كان المستخدم أدمن
+    if (user.email === 'yahyamanouni2@gmail.com') {
+      // منح الأدمن صلاحيات كاملة تلقائياً
+      try {
+        const { error } = await supabase
+          .from('user_activations')
+          .upsert({
+            user_id: user.id,
+            user_email: user.email || '',
+            is_activated: true,
+            is_admin: true,
+            activation_type: 'admin',
+            activated_at: new Date().toISOString(),
+            subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // سنة كاملة
+            max_trial_transactions: 999999,
+            trial_transactions_used: 0
+          });
+
+        if (!error) {
+          toast({
+            title: language === 'ar' ? "تم تفعيل الأدمن!" : "Admin Activated!",
+            description: language === 'ar' ? "تم تفعيل حساب الأدمن بصلاحيات كاملة" : "Admin account activated with full privileges"
+          });
+          window.location.reload();
+          return;
+        }
+      } catch (error) {
+        console.error('Admin activation error:', error);
+      }
+    }
+
     if (!activationCode.trim()) {
       toast({
         title: language === 'ar' ? "خطأ" : "Error",
@@ -56,6 +87,23 @@ const ActivationCodeInput = () => {
 
       if (data && typeof data === 'object' && 'success' in data) {
         if (data.success) {
+          // إضافة سجل التفعيل في جدول user_activations
+          await supabase
+            .from('user_activations')
+            .upsert({
+              user_id: user.id,
+              user_email: user.email || '',
+              is_activated: true,
+              activation_type: data.code_type || 'subscription',
+              activated_at: new Date().toISOString(),
+              subscription_expires_at: data.code_type === 'lifetime' 
+                ? new Date(Date.now() + 50 * 365 * 24 * 60 * 60 * 1000).toISOString() // 50 سنة للأبدي
+                : new Date(Date.now() + (data.subscription_duration || 12) * 30 * 24 * 60 * 60 * 1000).toISOString(),
+              is_admin: data.is_admin || false,
+              max_trial_transactions: data.code_type === 'gift' ? 10 : 999999,
+              trial_transactions_used: 0
+            });
+
           toast({
             title: language === 'ar' ? "نجح التفعيل!" : "Activation Successful!",
             description: typeof data.message === 'string' ? data.message : (language === 'ar' ? "تم تفعيل حسابك بنجاح!" : "Your account has been activated successfully!")
@@ -96,28 +144,52 @@ const ActivationCodeInput = () => {
       <CardHeader>
         <CardTitle className="text-center text-primary">
           {language === 'ar' ? 'تفعيل الحساب' : 'Account Activation'}
+          {user?.email === 'yahyamanouni2@gmail.com' && (
+            <div className="text-sm text-red-600 mt-2">
+              {language === 'ar' ? 'حساب الأدمن - تفعيل تلقائي' : 'Admin Account - Auto Activation'}
+            </div>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="activation-code">
-            {language === 'ar' ? 'كود التفعيل' : 'Activation Code'}
-          </Label>
-          <Input
-            id="activation-code"
-            placeholder={language === 'ar' ? "PV-XXXX-XXXX-XXXX" : "PV-XXXX-XXXX-XXXX"}
-            value={activationCode}
-            onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
-            className="text-center font-mono"
-          />
-        </div>
-        <Button 
-          onClick={handleActivateCode}
-          disabled={isSubmitting || !activationCode.trim()}
-          className="w-full"
-        >
-          {isSubmitting ? (language === 'ar' ? 'جاري التفعيل...' : 'Activating...') : (language === 'ar' ? 'تفعيل' : 'Activate')}
-        </Button>
+        {user?.email === 'yahyamanouni2@gmail.com' ? (
+          <div className="space-y-4">
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
+              <p className="text-green-700 dark:text-green-300">
+                {language === 'ar' ? 'أنت مسؤول النظام. اضغط التفعيل للحصول على صلاحيات كاملة.' : 'You are system administrator. Click activate for full privileges.'}
+              </p>
+            </div>
+            <Button 
+              onClick={handleActivateCode}
+              disabled={isSubmitting}
+              className="w-full"
+            >
+              {isSubmitting ? (language === 'ar' ? 'جاري التفعيل...' : 'Activating...') : (language === 'ar' ? 'تفعيل الأدمن' : 'Activate Admin')}
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="activation-code">
+                {language === 'ar' ? 'كود التفعيل' : 'Activation Code'}
+              </Label>
+              <Input
+                id="activation-code"
+                placeholder={language === 'ar' ? "PV-XXXX-XXXX-XXXX" : "PV-XXXX-XXXX-XXXX"}
+                value={activationCode}
+                onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                className="text-center font-mono"
+              />
+            </div>
+            <Button 
+              onClick={handleActivateCode}
+              disabled={isSubmitting || !activationCode.trim()}
+              className="w-full"
+            >
+              {isSubmitting ? (language === 'ar' ? 'جاري التفعيل...' : 'Activating...') : (language === 'ar' ? 'تفعيل' : 'Activate')}
+            </Button>
+          </>
+        )}
         <div className="text-center text-sm text-muted-foreground">
           <p>{language === 'ar' ? 'اشتر كود التفعيل للحصول على معاملات غير محدودة' : 'Purchase activation code for unlimited transactions'}</p>
         </div>

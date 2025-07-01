@@ -21,6 +21,7 @@ interface UserProfileData {
   subscription_status: string;
   trial_transactions_used: number;
   max_trial_transactions: number;
+  is_admin?: boolean;
 }
 
 const UserProfile = () => {
@@ -43,39 +44,99 @@ const UserProfile = () => {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      checkActivationStatus();
     }
   }, [user]);
 
   const fetchProfile = async () => {
     try {
-      // استخدام جدول profiles الموجود بدلاً من user_profiles
-      const { data, error } = await supabase
+      // التحقق من وجود ملف شخصي
+      const { data: existingProfile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user?.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
-      }
+      if (profileError && profileError.code === 'PGRST116') {
+        // إنشاء ملف شخصي جديد إذا لم يكن موجوداً
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user?.id,
+            username: user?.user_metadata?.username || user?.email?.split('@')[0] || 'مستخدم جديد',
+            email: user?.email || '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
 
-      if (data) {
-        setProfile({
-          display_name: data.username || '',
-          bio: '',
-          avatar_url: '',
-          phone: '',
-          location: '',
-          subscription_status: 'trial',
-          trial_transactions_used: 0,
-          max_trial_transactions: 3
-        });
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+        }
+
+        // إعادة جلب الملف الشخصي بعد الإنشاء
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user?.id)
+          .single();
+
+        if (newProfile) {
+          setProfile(prev => ({
+            ...prev,
+            display_name: newProfile.username || '',
+            is_admin: user?.email === 'yahyamanouni2@gmail.com'
+          }));
+        }
+      } else if (existingProfile) {
+        setProfile(prev => ({
+          ...prev,
+          display_name: existingProfile.username || '',
+          is_admin: user?.email === 'yahyamanouni2@gmail.com'
+        }));
       }
     } catch (error) {
       console.error('Error:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const checkActivationStatus = async () => {
+    if (!user) return;
+    
+    try {
+      // التحقق من حالة التفعيل
+      const { data: activationData } = await supabase
+        .from('user_activations')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (activationData && activationData.is_activated) {
+        setProfile(prev => ({
+          ...prev,
+          subscription_status: 'active',
+          trial_transactions_used: activationData.trial_transactions_used || 0,
+          max_trial_transactions: activationData.max_trial_transactions || 3
+        }));
+      } else {
+        // حساب المعاملات المستخدمة من جدول المعاملات
+        const { data: transactionsData } = await supabase
+          .from('transactions')
+          .select('id')
+          .eq('user_id', user.id);
+
+        const transactionCount = transactionsData?.length || 0;
+        
+        setProfile(prev => ({
+          ...prev,
+          subscription_status: 'trial',
+          trial_transactions_used: transactionCount,
+          max_trial_transactions: 3
+        }));
+      }
+    } catch (error) {
+      console.error('Error checking activation status:', error);
     }
   };
 
@@ -142,6 +203,11 @@ const UserProfile = () => {
           <CardTitle className="text-primary flex items-center gap-2">
             <User size={20} />
             {language === 'ar' ? 'الملف الشخصي' : 'User Profile'}
+            {profile.is_admin && (
+              <span className="bg-red-600 text-white px-2 py-1 rounded text-xs">
+                {language === 'ar' ? 'أدمن' : 'Admin'}
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -244,6 +310,11 @@ const UserProfile = () => {
                 <strong>{language === 'ar' ? 'المعاملات المستخدمة:' : 'Transactions Used:'}</strong>{' '}
                 {profile.trial_transactions_used} / {profile.max_trial_transactions}
               </p>
+              {profile.is_admin && (
+                <p className="text-red-600 font-medium">
+                  {language === 'ar' ? 'أنت مسؤول النظام - صلاحيات كاملة' : 'You are system administrator - Full privileges'}
+                </p>
+              )}
             </div>
           </div>
 
