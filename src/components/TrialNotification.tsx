@@ -29,13 +29,13 @@ const TrialNotification: React.FC<TrialNotificationProps> = ({
     ar: {
       title: 'فترة تجريبية',
       description: `لديك ${remaining} معاملة متبقية من أصل ${maxTransactions}. اشترك للحصول على معاملات غير محدودة.`,
-      limitReached: 'تم انتهاء الفترة التجريبية. اشترك للمتابعة.',
+      limitReached: 'تم انتهاء الفترة التجريبية. تواصل مع الأدمن للحصول على كود التفعيل: +213676070165',
       activateButton: 'تفعيل الحساب'
     },
     en: {
       title: 'Trial Period',
       description: `You have ${remaining} transactions remaining out of ${maxTransactions}. Subscribe for unlimited transactions.`,
-      limitReached: 'Trial period ended. Subscribe to continue.',
+      limitReached: 'Trial period ended. Contact admin for activation code: +213676070165',
       activateButton: 'Activate Account'
     }
   };

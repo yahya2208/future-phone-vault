@@ -48,6 +48,16 @@ const FuturisticHeader = () => {
           
           {user && (
             <div className="flex items-center space-x-2 space-x-reverse">
+              <div className="flex items-center space-x-2 space-x-reverse text-sm">
+                <span className="text-foreground">
+                  {user.user_metadata?.username || user.email?.split('@')[0] || 'مستخدم'}
+                </span>
+                {user.email === 'yahyamanouni2@gmail.com' && (
+                  <span className="bg-red-600 text-white px-2 py-1 rounded text-xs">
+                    {language === 'ar' ? 'أدمن' : 'Admin'}
+                  </span>
+                )}
+              </div>
               <Button 
                 onClick={() => navigate('/profile')}
                 variant="ghost"

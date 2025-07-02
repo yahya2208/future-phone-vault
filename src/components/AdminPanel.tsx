@@ -39,9 +39,11 @@ const AdminPanel = () => {
         const { error } = await supabase
           .from('activation_codes')
           .insert({
-            code_hash: code, // استخدام code_hash بدلاً من code
-            user_email: 'admin@app.com',
-            subscription_duration_months: 12
+            code_hash: code,
+            user_email: 'yahyamanouni2@gmail.com',
+            subscription_duration_months: 12,
+            code_type: 'subscription',
+            created_by_admin: true
           });
 
         if (!error) {

@@ -59,6 +59,10 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_admin: boolean | null
+          max_transactions: number | null
+          plan_type: string | null
+          subscription_expires_at: string | null
           updated_at: string
           username: string
         }
@@ -66,6 +70,10 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          is_admin?: boolean | null
+          max_transactions?: number | null
+          plan_type?: string | null
+          subscription_expires_at?: string | null
           updated_at?: string
           username: string
         }
@@ -73,6 +81,10 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_admin?: boolean | null
+          max_transactions?: number | null
+          plan_type?: string | null
+          subscription_expires_at?: string | null
           updated_at?: string
           username?: string
         }

@@ -51,8 +51,25 @@ const Index = () => {
     if (user) {
       fetchUserProfile();
       fetchTransactions();
+      // إرسال تذكير إذا انتهت الفترة التجريبية
+      checkTrialStatus();
     }
   }, [user]);
+
+  const checkTrialStatus = async () => {
+    if (!user || user.email === 'yahyamanouni2@gmail.com') return;
+    
+    try {
+      await supabase.functions.invoke('send-activation-reminder', {
+        body: {
+          user_id: user.id,
+          user_email: user.email
+        }
+      });
+    } catch (error) {
+      console.log('Error sending activation reminder:', error);
+    }
+  };
 
   const fetchUserProfile = async () => {
     if (!user) return;

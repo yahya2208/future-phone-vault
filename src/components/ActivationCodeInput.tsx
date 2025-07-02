@@ -102,7 +102,8 @@ const ActivationCodeInput = () => {
       if (data && typeof data === 'object' && 'success' in data) {
         if (data.success) {
           // إضافة سجل التفعيل في جدول user_activations
-          await supabase
+          const subscriptionDuration = typeof data.subscription_duration === 'number' ? data.subscription_duration : 12;
+          const { error: activationError } = await supabase
             .from('user_activations')
             .upsert({
               user_id: user.id,
@@ -111,12 +112,12 @@ const ActivationCodeInput = () => {
               activation_type: data.code_type || 'subscription',
               activated_at: new Date().toISOString(),
               subscription_expires_at: data.code_type === 'lifetime' 
-                ? new Date(Date.now() + 50 * 365 * 24 * 60 * 60 * 1000).toISOString() // 50 سنة للأبدي
-                : new Date(Date.now() + (data.subscription_duration || 12) * 30 * 24 * 60 * 60 * 1000).toISOString(),
+                ? new Date(Date.now() + 50 * 365 * 24 * 60 * 60 * 1000).toISOString()
+                : new Date(Date.now() + (subscriptionDuration * 30 * 24 * 60 * 60 * 1000)).toISOString(),
               is_admin: data.is_admin || false,
               max_trial_transactions: data.code_type === 'gift' ? 10 : 999999,
               trial_transactions_used: 0
-            });
+            } as any);
 
           toast({
             title: language === 'ar' ? "نجح التفعيل!" : "Activation Successful!",

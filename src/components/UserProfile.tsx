@@ -241,12 +241,16 @@ const UserProfile = () => {
   };
 
   const avatarOptions = [
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=6'
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=business&backgroundColor=b6e3f4',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=casual&backgroundColor=c0aede',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=formal&backgroundColor=d1d4f9',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=creative&backgroundColor=fecaca',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=friendly&backgroundColor=fed7aa',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=professional&backgroundColor=bbf7d0',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=smart&backgroundColor=fef3c7',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=elegant&backgroundColor=e0e7ff',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=modern&backgroundColor=f3e8ff',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=classic&backgroundColor=fce7f3'
   ];
 
   if (isLoading) {
@@ -298,13 +302,15 @@ const UserProfile = () => {
               </AvatarFallback>
             </Avatar>
             
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-5 gap-3">
               {avatarOptions.map((avatarUrl, index) => (
                 <button
                   key={index}
                   onClick={() => handleAvatarChange(avatarUrl)}
-                  className={`w-12 h-12 rounded-full border-2 ${
-                    profile.avatar_url === avatarUrl ? 'border-primary' : 'border-gray-200'
+                  className={`w-14 h-14 rounded-full border-2 transition-all duration-200 hover:scale-105 ${
+                    profile.avatar_url === avatarUrl 
+                      ? 'border-primary border-4 shadow-lg' 
+                      : 'border-muted-foreground/20 hover:border-primary/50'
                   }`}
                 >
                   <Avatar className="w-full h-full">
@@ -370,14 +376,14 @@ const UserProfile = () => {
           </div>
 
           {/* Subscription Status */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-            <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+          <div className="bg-muted/50 p-4 rounded-lg border">
+            <h3 className="font-semibold text-foreground mb-2">
               {language === 'ar' ? 'حالة الاشتراك' : 'Subscription Status'}
             </h3>
-            <div className="space-y-1 text-sm">
+            <div className="space-y-1 text-sm text-foreground">
               <p>
                 <strong>{language === 'ar' ? 'الحالة:' : 'Status:'}</strong>{' '}
-                <span className={profile.subscription_status === 'active' ? 'text-green-600' : 'text-orange-600'}>
+                <span className={profile.subscription_status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
                   {profile.subscription_status === 'active' 
                     ? (language === 'ar' ? 'نشط' : 'Active')
                     : (language === 'ar' ? 'تجريبي' : 'Trial')
@@ -386,10 +392,10 @@ const UserProfile = () => {
               </p>
               <p>
                 <strong>{language === 'ar' ? 'المعاملات المستخدمة:' : 'Transactions Used:'}</strong>{' '}
-                {profile.trial_transactions_used} / {profile.max_trial_transactions}
+                <span className="text-foreground">{profile.trial_transactions_used} / {profile.max_trial_transactions}</span>
               </p>
               {profile.is_admin && (
-                <p className="text-red-600 font-medium">
+                <p className="text-red-600 dark:text-red-400 font-medium">
                   {language === 'ar' ? 'أنت مسؤول النظام - صلاحيات كاملة' : 'You are system administrator - Full privileges'}
                 </p>
               )}
