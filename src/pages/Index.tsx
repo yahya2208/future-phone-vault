@@ -60,12 +60,25 @@ const Index = () => {
     if (!user || user.email === 'yahyamanouni2@gmail.com') return;
     
     try {
-      await supabase.functions.invoke('send-activation-reminder', {
-        body: {
-          user_id: user.id,
-          user_email: user.email
-        }
-      });
+      // Get user's transaction count first
+      const { data: transactionsData } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('user_id', user.id);
+
+      const transactionCount = transactionsData?.length || 0;
+      
+      // Send reminder if trial period ended (3+ transactions)
+      if (transactionCount >= 3) {
+        console.log('Sending activation reminder for user:', user.email);
+        const response = await supabase.functions.invoke('send-activation-reminder', {
+          body: {
+            user_id: user.id,
+            user_email: user.email
+          }
+        });
+        console.log('Activation reminder response:', response);
+      }
     } catch (error) {
       console.log('Error sending activation reminder:', error);
     }

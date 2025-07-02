@@ -7,11 +7,14 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Download, Key } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const AdminPanel = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activationCodes, setActivationCodes] = useState<string[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [codeQuantity, setCodeQuantity] = useState(1);
   const { toast } = useToast();
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -27,12 +30,21 @@ const AdminPanel = () => {
   };
 
   const generateActivationCodes = async () => {
+    if (codeQuantity < 1 || codeQuantity > 500) {
+      toast({
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: language === 'ar' ? "يجب أن يكون عدد الأكواد بين 1 و 500" : "Number of codes must be between 1 and 500",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const codes: string[] = [];
       
-      // توليد 200 كود
-      for (let i = 0; i < 200; i++) {
+      // توليد العدد المطلوب من الأكواد
+      for (let i = 0; i < codeQuantity; i++) {
         const code = `PV-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
         
         // إدراج الكود في قاعدة البيانات
@@ -110,6 +122,22 @@ const AdminPanel = () => {
           </div>
 
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="codeQuantity">
+                {language === 'ar' ? 'عدد الأكواد المراد توليدها' : 'Number of codes to generate'}
+              </Label>
+              <Input
+                id="codeQuantity"
+                type="number"
+                min="1"
+                max="500"
+                value={codeQuantity}
+                onChange={(e) => setCodeQuantity(parseInt(e.target.value) || 1)}
+                className="w-full"
+                placeholder={language === 'ar' ? 'أدخل عدد الأكواد (1-500)' : 'Enter number of codes (1-500)'}
+              />
+            </div>
+            
             <Button 
               onClick={generateActivationCodes}
               disabled={isGenerating}
@@ -118,7 +146,7 @@ const AdminPanel = () => {
               <Key className="mr-2 h-4 w-4" />
               {isGenerating 
                 ? (language === 'ar' ? 'جاري توليد الأكواد...' : 'Generating Codes...') 
-                : (language === 'ar' ? 'توليد 200 كود تفعيل' : 'Generate 200 Activation Codes')
+                : (language === 'ar' ? `توليد ${codeQuantity} كود تفعيل` : `Generate ${codeQuantity} Activation Code${codeQuantity > 1 ? 's' : ''}`)
               }
             </Button>
 

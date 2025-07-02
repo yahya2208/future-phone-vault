@@ -52,11 +52,14 @@ const handler = async (req: Request): Promise<Response> => {
               لقد انتهت فترتك التجريبية في تطبيق Phone Vault. لقد استخدمت ${transactionCount} معاملات من أصل 3 معاملات مجانية.
             </p>
             <p style="font-size: 16px; line-height: 1.6;">
-              للمتابعة في استخدام التطبيق، يرجى التواصل مع الأدمن للحصول على كود التفعيل:
+              للمتابعة في استخدام التطبيق، يرجى التواصل مع الأدمن للحصول على كود التفعيل على الرقم التالي:
             </p>
             <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
               <strong style="font-size: 18px; color: #1f2937;">+213676070165</strong>
             </div>
+            <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              يمكنك شراء كود التفعيل من خلال التواصل مع المطور على الرقم أعلاه.
+            </p>
             <p style="font-size: 14px; color: #666;">
               شكراً لاستخدامك Phone Vault<br>
               فريق التطوير
