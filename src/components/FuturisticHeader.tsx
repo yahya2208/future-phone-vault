@@ -4,10 +4,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import { useNavigate } from 'react-router-dom';
+import { User } from 'lucide-react';
 
 const FuturisticHeader = () => {
   const { signOut, user } = useAuth();
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   
   const currentTime = new Date().toLocaleTimeString(language === 'ar' ? 'ar-SA' : 'en-US', {
     hour: '2-digit',
@@ -44,13 +47,24 @@ const FuturisticHeader = () => {
           </div>
           
           {user && (
-            <Button 
-              onClick={handleLogout}
-              className="neural-btn text-xs md:text-sm px-3 py-2 min-w-[100px]"
-              variant="outline"
-            >
-              {t('logout')}
-            </Button>
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Button 
+                onClick={() => navigate('/profile')}
+                variant="ghost"
+                size="icon"
+                className="text-primary hover:bg-accent/20"
+                title={language === 'ar' ? 'الملف الشخصي' : 'Profile'}
+              >
+                <User className="h-5 w-5" />
+              </Button>
+              <Button 
+                onClick={handleLogout}
+                className="neural-btn text-xs md:text-sm px-3 py-2 min-w-[100px]"
+                variant="outline"
+              >
+                {t('logout')}
+              </Button>
+            </div>
           )}
           
           <div className="text-center">

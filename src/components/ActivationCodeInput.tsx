@@ -26,35 +26,49 @@ const ActivationCodeInput = () => {
       return;
     }
 
-    // التحقق إذا كان المستخدم أدمن
+    // Check if user is admin
     if (user.email === 'yahyamanouni2@gmail.com') {
-      // منح الأدمن صلاحيات كاملة تلقائياً
+      setIsSubmitting(true);
       try {
-        const { error } = await supabase
-          .from('user_activations')
-          .upsert({
-            user_id: user.id,
-            user_email: user.email || '',
-            is_activated: true,
+        console.log('Starting admin activation for user:', user.id);
+        
+        // Update profile to set admin status
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
             is_admin: true,
-            activation_type: 'admin',
-            activated_at: new Date().toISOString(),
-            subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // سنة كاملة
-            max_trial_transactions: 999999,
-            trial_transactions_used: 0
-          });
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
 
-        if (!error) {
-          toast({
-            title: language === 'ar' ? "تم تفعيل الأدمن!" : "Admin Activated!",
-            description: language === 'ar' ? "تم تفعيل حساب الأدمن بصلاحيات كاملة" : "Admin account activated with full privileges"
-          });
-          window.location.reload();
-          return;
+        if (profileError) {
+          console.error('Error updating admin profile:', profileError);
+          throw profileError;
         }
+
+        console.log('Admin profile updated successfully');
+        
+        // Show success message
+        toast({
+          title: language === 'ar' ? "تم تفعيل الأدمن!" : "Admin Activated!",
+          description: language === 'ar' 
+            ? "تم تفعيل حساب الأدمن بصلاحيات كاملة" 
+            : "Admin account activated with full privileges"
+        });
+        
+        // Reload after a short delay to show the toast
+        console.log('Reloading page to apply changes...');
+        setTimeout(() => window.location.reload(), 1500);
+        return;
       } catch (error) {
         console.error('Admin activation error:', error);
+        toast({
+          title: language === 'ar' ? "خطأ" : "Error",
+          description: language === 'ar' ? "حدث خطأ أثناء تفعيل حساب الأدمن" : "An error occurred while activating admin account",
+          variant: "destructive"
+        });
       }
+      return;
     }
 
     if (!activationCode.trim()) {

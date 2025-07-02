@@ -58,28 +58,53 @@ const Index = () => {
     if (!user) return;
     
     try {
-      // حساب المعاملات المستخدمة من جدول المعاملات
-      const { data, error } = await supabase
+      // First, get the user's profile to check if they're an admin
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        // Continue with default values if there's an error
+      }
+
+      // Check if user is admin
+      const isAdmin = profileData?.is_admin || user.email === 'yahyamanouni2@gmail.com';
+      
+      // Get transaction count
+      const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select('id')
         .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error fetching user profile:', error);
+      if (transactionsError) {
+        console.error('Error fetching transactions:', transactionsError);
         return;
       }
 
-      // حساب المعاملات المستخدمة
-      const transactionCount = data?.length || 0;
+      const transactionCount = transactionsData?.length || 0;
       
-      setUserProfile({
-        subscription_status: 'trial',
-        trial_transactions_used: transactionCount,
-        max_trial_transactions: 3
-      });
+      // Set user profile with appropriate limits based on admin status
+      if (isAdmin) {
+        console.log('Admin user detected, setting unlimited transactions');
+        setUserProfile({
+          subscription_status: 'active',
+          trial_transactions_used: 0,
+          max_trial_transactions: 999999  // Effectively unlimited for admin
+        });
+      } else {
+        // For non-admin users, use trial status
+        setUserProfile({
+          subscription_status: 'trial',
+          trial_transactions_used: transactionCount,
+          max_trial_transactions: 3
+        });
+      }
 
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error in fetchUserProfile:', error);
     }
   };
 

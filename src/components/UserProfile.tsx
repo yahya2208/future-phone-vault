@@ -10,7 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { User } from 'lucide-react';
+import { User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface UserProfileData {
   display_name: string;
@@ -40,6 +41,7 @@ const UserProfile = () => {
   const { toast } = useToast();
   const { language } = useLanguage();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -105,7 +107,66 @@ const UserProfile = () => {
     if (!user) return;
     
     try {
-      // التحقق من حالة التفعيل
+      // Check if user is admin
+      if (user.email === 'yahyamanouni2@gmail.com') {
+        try {
+          console.log('Checking admin activation status for user:', user.id);
+          
+          // First, update the profile to set admin status
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              is_admin: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+
+          if (profileError) {
+            // If the error is about subscription_status column, try without it
+            if (profileError.message.includes('subscription_status')) {
+              console.log('subscription_status column not found, updating without it');
+            } else {
+              console.error('Error updating admin profile:', profileError);
+              throw profileError;
+            }
+          }
+
+          console.log('Admin profile updated successfully');
+          
+          // Update local state to reflect admin status and active subscription
+          setProfile(prev => ({
+            ...prev,
+            is_admin: true,
+            subscription_status: 'active',
+            trial_transactions_used: 0,
+            max_trial_transactions: 999999  // Set a high limit for admin
+          }));
+          
+          console.log('Admin activation completed successfully');
+        } catch (error) {
+          console.error('Error in admin activation:', error);
+          toast({
+            title: language === 'ar' ? "خطأ" : "Error",
+            description: language === 'ar' 
+              ? "حدث خطأ أثناء تفعيل صلاحيات الأدمن" 
+              : "An error occurred while activating admin privileges",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // تحديث حالة الملف الشخصي
+        setProfile(prev => ({
+          ...prev,
+          subscription_status: 'active',
+          is_admin: true,
+          trial_transactions_used: 0,
+          max_trial_transactions: 999999
+        }));
+        return;
+      }
+
+      // التحقق من حالة التفعيل للمستخدمين العاديين
       const { data: activationData } = await supabase
         .from('user_activations')
         .select('*')
@@ -197,7 +258,24 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="max-w-2xl mx-auto space-y-6 px-4 py-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <Button
+        variant="ghost"
+        onClick={() => navigate(-1)}
+        className="mb-4"
+      >
+        {language === 'ar' ? (
+          <>
+            <ArrowLeft className="ml-2 h-4 w-4" />
+            العودة
+          </>
+        ) : (
+          <>
+            <ArrowRight className="mr-2 h-4 w-4" />
+            Back
+          </>
+        )}
+      </Button>
       <Card>
         <CardHeader>
           <CardTitle className="text-primary flex items-center gap-2">
