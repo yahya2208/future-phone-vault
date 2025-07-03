@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Download, Key } from 'lucide-react';
+import { Download, Key, Copy, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -13,6 +13,7 @@ const AdminCodeGeneration = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activationCodes, setActivationCodes] = useState<string[]>([]);
   const [codeQuantity, setCodeQuantity] = useState(1);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const { toast } = useToast();
   const { language } = useLanguage();
 
@@ -89,6 +90,24 @@ const AdminCodeGeneration = () => {
     }
   };
 
+  const copyCode = async (code: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedIndex(index);
+      toast({
+        title: language === 'ar' ? "تم النسخ" : "Copied",
+        description: language === 'ar' ? "تم نسخ الكود بنجاح" : "Code copied successfully"
+      });
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch (error) {
+      toast({
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: language === 'ar' ? "فشل في نسخ الكود" : "Failed to copy code",
+        variant: "destructive"
+      });
+    }
+  };
+
   const downloadCodes = () => {
     const codesText = activationCodes.join('\n');
     const blob = new Blob([codesText], { type: 'text/plain' });
@@ -161,10 +180,24 @@ const AdminCodeGeneration = () => {
                 <h3 className="font-semibold mb-2">
                   {language === 'ar' ? 'معاينة الأكواد:' : 'Code Preview:'}
                 </h3>
-                <div className="space-y-1 text-sm font-mono">
+                <div className="space-y-2 text-sm font-mono">
                   {activationCodes.slice(0, 10).map((code, index) => (
-                    <div key={index} className="p-1 bg-white dark:bg-gray-800 rounded border">
-                      {code}
+                    <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded border">
+                      <span className="text-gray-900 dark:text-gray-100 font-bold text-base select-all">
+                        {code}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyCode(code, index)}
+                        className="ml-2"
+                      >
+                        {copiedIndex === index ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                   ))}
                   {activationCodes.length > 10 && (

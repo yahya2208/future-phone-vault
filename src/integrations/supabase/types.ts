@@ -191,68 +191,46 @@ export type Database = {
       }
       user_activations: {
         Row: {
-          activated_at: string | null
-          activation_code_id: string | null
-          activation_type: string | null
-          created_at: string
-          device_fingerprint: string | null
+          activation_date: string
+          created_at: string | null
+          expires_at: string | null
           id: string
-          is_activated: boolean | null
-          is_admin: boolean | null
-          max_trial_transactions: number | null
-          subscription_expires_at: string | null
-          trial_transactions_used: number | null
-          updated_at: string
-          user_email: string
+          is_active: boolean
+          transactions_remaining: number | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          activated_at?: string | null
-          activation_code_id?: string | null
-          activation_type?: string | null
-          created_at?: string
-          device_fingerprint?: string | null
+          activation_date?: string
+          created_at?: string | null
+          expires_at?: string | null
           id?: string
-          is_activated?: boolean | null
-          is_admin?: boolean | null
-          max_trial_transactions?: number | null
-          subscription_expires_at?: string | null
-          trial_transactions_used?: number | null
-          updated_at?: string
-          user_email: string
+          is_active?: boolean
+          transactions_remaining?: number | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          activated_at?: string | null
-          activation_code_id?: string | null
-          activation_type?: string | null
-          created_at?: string
-          device_fingerprint?: string | null
+          activation_date?: string
+          created_at?: string | null
+          expires_at?: string | null
           id?: string
-          is_activated?: boolean | null
-          is_admin?: boolean | null
-          max_trial_transactions?: number | null
-          subscription_expires_at?: string | null
-          trial_transactions_used?: number | null
-          updated_at?: string
-          user_email?: string
+          is_active?: boolean
+          transactions_remaining?: number | null
+          updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_activations_activation_code_id_fkey"
-            columns: ["activation_code_id"]
-            isOneToOne: false
-            referencedRelation: "activation_codes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      activate_by_nickname: {
+        Args: { p_nickname: string }
+        Returns: Json
+      }
       generate_activation_code: {
         Args: { user_email: string }
         Returns: string
