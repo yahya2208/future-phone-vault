@@ -22,6 +22,9 @@ export type Database = {
           is_used: boolean | null
           notes: string | null
           subscription_duration_months: number | null
+          used: boolean | null
+          used_at: string | null
+          used_by: string | null
           user_email: string
         }
         Insert: {
@@ -36,6 +39,9 @@ export type Database = {
           is_used?: boolean | null
           notes?: string | null
           subscription_duration_months?: number | null
+          used?: boolean | null
+          used_at?: string | null
+          used_by?: string | null
           user_email: string
         }
         Update: {
@@ -50,6 +56,9 @@ export type Database = {
           is_used?: boolean | null
           notes?: string | null
           subscription_duration_months?: number | null
+          used?: boolean | null
+          used_at?: string | null
+          used_by?: string | null
           user_email?: string
         }
         Relationships: []
@@ -247,6 +256,17 @@ export type Database = {
       generate_activation_code: {
         Args: { user_email: string }
         Returns: string
+      }
+      generate_activation_codes: {
+        Args: {
+          p_quantity: number
+          p_admin_email: string
+          p_duration_months?: number
+          p_code_type?: string
+        }
+        Returns: {
+          code: string
+        }[]
       }
       generate_gift_codes: {
         Args: Record<PropertyKey, never>

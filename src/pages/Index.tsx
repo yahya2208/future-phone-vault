@@ -28,6 +28,7 @@ interface UserProfile {
   subscription_status: string;
   trial_transactions_used: number;
   max_trial_transactions: number;
+  is_admin?: boolean;
 }
 
 const Index = () => {
@@ -38,7 +39,8 @@ const Index = () => {
   const [userProfile, setUserProfile] = useState<UserProfile>({
     subscription_status: 'trial',
     trial_transactions_used: 0,
-    max_trial_transactions: 3
+    max_trial_transactions: 3,
+    is_admin: false
   });
 
   useEffect(() => {
@@ -51,7 +53,6 @@ const Index = () => {
     if (user) {
       fetchUserProfile();
       fetchTransactions();
-      // إرسال تذكير إذا انتهت الفترة التجريبية
       checkTrialStatus();
     }
   }, [user]);
@@ -60,7 +61,6 @@ const Index = () => {
     if (!user || user.email === 'yahyamanouni2@gmail.com') return;
     
     try {
-      // Get user's transaction count first
       const { data: transactionsData } = await supabase
         .from('transactions')
         .select('id')
@@ -68,7 +68,6 @@ const Index = () => {
 
       const transactionCount = transactionsData?.length || 0;
       
-      // Send reminder if trial period ended (3+ transactions)
       if (transactionCount >= 3) {
         console.log('Sending activation reminder for user:', user.email);
         const response = await supabase.functions.invoke('send-activation-reminder', {
@@ -88,7 +87,6 @@ const Index = () => {
     if (!user) return;
     
     try {
-      // First, get the user's profile to check if they're an admin
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('is_admin')
@@ -97,13 +95,10 @@ const Index = () => {
 
       if (profileError) {
         console.error('Error fetching user profile:', profileError);
-        // Continue with default values if there's an error
       }
 
-      // Check if user is admin
       const isAdmin = profileData?.is_admin || user.email === 'yahyamanouni2@gmail.com';
       
-      // Get transaction count
       const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select('id')
@@ -116,20 +111,20 @@ const Index = () => {
 
       const transactionCount = transactionsData?.length || 0;
       
-      // Set user profile with appropriate limits based on admin status
       if (isAdmin) {
         console.log('Admin user detected, setting unlimited transactions');
         setUserProfile({
           subscription_status: 'active',
           trial_transactions_used: 0,
-          max_trial_transactions: 999999  // Effectively unlimited for admin
+          max_trial_transactions: 999999,
+          is_admin: true
         });
       } else {
-        // For non-admin users, use trial status
         setUserProfile({
           subscription_status: 'trial',
           trial_transactions_used: transactionCount,
-          max_trial_transactions: 3
+          max_trial_transactions: 3,
+          is_admin: false
         });
       }
 
@@ -163,7 +158,7 @@ const Index = () => {
         purchaseDate: t.purchase_date,
         timestamp: new Date(t.created_at),
         rating: t.rating,
-        customPhoneModel: t.phone_model // استخدام phone_model كبديل
+        customPhoneModel: t.phone_model
       }));
       setTransactions(mappedTransactions);
     }
@@ -239,10 +234,13 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <FuturisticHeader />
         
-        <TrialNotification 
-          transactionsUsed={userProfile.trial_transactions_used}
-          maxTransactions={userProfile.max_trial_transactions}
-        />
+        {/* Only show trial notification for non-admin users */}
+        {!userProfile.is_admin && (
+          <TrialNotification 
+            transactionsUsed={userProfile.trial_transactions_used}
+            maxTransactions={userProfile.max_trial_transactions}
+          />
+        )}
         
         <DashboardStats 
           totalTransactions={totalTransactions}

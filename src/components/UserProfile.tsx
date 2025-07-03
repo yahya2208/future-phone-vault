@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { User, ArrowRight, ArrowLeft, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface UserProfileData {
@@ -52,7 +52,6 @@ const UserProfile = () => {
 
   const fetchProfile = async () => {
     try {
-      // التحقق من وجود ملف شخصي
       const { data: existingProfile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -60,7 +59,6 @@ const UserProfile = () => {
         .single();
 
       if (profileError && profileError.code === 'PGRST116') {
-        // إنشاء ملف شخصي جديد إذا لم يكن موجوداً
         const { error: insertError } = await supabase
           .from('profiles')
           .insert({
@@ -75,7 +73,6 @@ const UserProfile = () => {
           console.error('Error creating profile:', insertError);
         }
 
-        // إعادة جلب الملف الشخصي بعد الإنشاء
         const { data: newProfile } = await supabase
           .from('profiles')
           .select('*')
@@ -90,9 +87,11 @@ const UserProfile = () => {
           }));
         }
       } else if (existingProfile) {
+        const savedAvatar = localStorage.getItem(`avatar_${user?.id}`);
         setProfile(prev => ({
           ...prev,
           display_name: existingProfile.username || '',
+          avatar_url: savedAvatar || '',
           is_admin: user?.email === 'yahyamanouni2@gmail.com'
         }));
       }
@@ -107,12 +106,10 @@ const UserProfile = () => {
     if (!user) return;
     
     try {
-      // Check if user is admin
       if (user.email === 'yahyamanouni2@gmail.com') {
         try {
           console.log('Checking admin activation status for user:', user.id);
           
-          // First, update the profile to set admin status
           const { error: profileError } = await supabase
             .from('profiles')
             .update({
@@ -122,7 +119,6 @@ const UserProfile = () => {
             .eq('id', user.id);
 
           if (profileError) {
-            // If the error is about subscription_status column, try without it
             if (profileError.message.includes('subscription_status')) {
               console.log('subscription_status column not found, updating without it');
             } else {
@@ -133,13 +129,12 @@ const UserProfile = () => {
 
           console.log('Admin profile updated successfully');
           
-          // Update local state to reflect admin status and active subscription
           setProfile(prev => ({
             ...prev,
             is_admin: true,
             subscription_status: 'active',
             trial_transactions_used: 0,
-            max_trial_transactions: 999999  // Set a high limit for admin
+            max_trial_transactions: 999999
           }));
           
           console.log('Admin activation completed successfully');
@@ -155,7 +150,6 @@ const UserProfile = () => {
           return;
         }
 
-        // تحديث حالة الملف الشخصي
         setProfile(prev => ({
           ...prev,
           subscription_status: 'active',
@@ -166,7 +160,6 @@ const UserProfile = () => {
         return;
       }
 
-      // التحقق من حالة التفعيل للمستخدمين العاديين
       const { data: activationData } = await supabase
         .from('user_activations')
         .select('*')
@@ -181,7 +174,6 @@ const UserProfile = () => {
           max_trial_transactions: activationData.max_trial_transactions || 3
         }));
       } else {
-        // حساب المعاملات المستخدمة من جدول المعاملات
         const { data: transactionsData } = await supabase
           .from('transactions')
           .select('id')
@@ -225,6 +217,11 @@ const UserProfile = () => {
         return;
       }
 
+      // Save avatar to localStorage
+      if (profile.avatar_url) {
+        localStorage.setItem(`avatar_${user.id}`, profile.avatar_url);
+      }
+
       toast({
         title: language === 'ar' ? "تم الحفظ" : "Saved",
         description: language === 'ar' ? "تم حفظ الملف الشخصي بنجاح" : "Profile saved successfully"
@@ -238,6 +235,18 @@ const UserProfile = () => {
 
   const handleAvatarChange = (avatarUrl: string) => {
     setProfile(prev => ({ ...prev, avatar_url: avatarUrl }));
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        handleAvatarChange(result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const avatarOptions = [
@@ -301,6 +310,25 @@ const UserProfile = () => {
                 <User size={32} />
               </AvatarFallback>
             </Avatar>
+            
+            {/* Upload from device button */}
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+                id="avatar-upload"
+              />
+              <Button
+                onClick={() => document.getElementById('avatar-upload')?.click()}
+                variant="outline"
+                size="sm"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {language === 'ar' ? 'رفع صورة' : 'Upload Image'}
+              </Button>
+            </div>
             
             <div className="grid grid-cols-5 gap-3">
               {avatarOptions.map((avatarUrl, index) => (
@@ -375,32 +403,29 @@ const UserProfile = () => {
             </div>
           </div>
 
-          {/* Subscription Status */}
-          <div className="bg-muted/50 p-4 rounded-lg border">
-            <h3 className="font-semibold text-foreground mb-2">
-              {language === 'ar' ? 'حالة الاشتراك' : 'Subscription Status'}
-            </h3>
-            <div className="space-y-1 text-sm text-foreground">
-              <p>
-                <strong>{language === 'ar' ? 'الحالة:' : 'Status:'}</strong>{' '}
-                <span className={profile.subscription_status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
-                  {profile.subscription_status === 'active' 
-                    ? (language === 'ar' ? 'نشط' : 'Active')
-                    : (language === 'ar' ? 'تجريبي' : 'Trial')
-                  }
-                </span>
-              </p>
-              <p>
-                <strong>{language === 'ar' ? 'المعاملات المستخدمة:' : 'Transactions Used:'}</strong>{' '}
-                <span className="text-foreground">{profile.trial_transactions_used} / {profile.max_trial_transactions}</span>
-              </p>
-              {profile.is_admin && (
-                <p className="text-red-600 dark:text-red-400 font-medium">
-                  {language === 'ar' ? 'أنت مسؤول النظام - صلاحيات كاملة' : 'You are system administrator - Full privileges'}
+          {/* Subscription Status - Hide for admin */}
+          {!profile.is_admin && (
+            <div className="bg-muted/50 p-4 rounded-lg border">
+              <h3 className="font-semibold text-foreground mb-2">
+                {language === 'ar' ? 'حالة الاشتراك' : 'Subscription Status'}
+              </h3>
+              <div className="space-y-1 text-sm text-foreground">
+                <p>
+                  <strong>{language === 'ar' ? 'الحالة:' : 'Status:'}</strong>{' '}
+                  <span className={profile.subscription_status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
+                    {profile.subscription_status === 'active' 
+                      ? (language === 'ar' ? 'نشط' : 'Active')
+                      : (language === 'ar' ? 'تجريبي' : 'Trial')
+                    }
+                  </span>
                 </p>
-              )}
+                <p>
+                  <strong>{language === 'ar' ? 'المعاملات المستخدمة:' : 'Transactions Used:'}</strong>{' '}
+                  <span className="text-foreground">{profile.trial_transactions_used} / {profile.max_trial_transactions}</span>
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
           <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full">
             {isSaving ? (language === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (language === 'ar' ? 'حفظ التغييرات' : 'Save Changes')}

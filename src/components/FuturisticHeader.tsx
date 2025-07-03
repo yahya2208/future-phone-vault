@@ -5,22 +5,34 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useNavigate } from 'react-router-dom';
-import { User } from 'lucide-react';
+import { User, Settings, LogOut, Shield } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const FuturisticHeader = () => {
   const { signOut, user } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   
-  const currentTime = new Date().toLocaleTimeString(language === 'ar' ? 'ar-SA' : 'en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
-
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const isAdmin = user?.email === 'yahyamanouni2@gmail.com';
+
+  // Get user avatar from localStorage or use default
+  const getUserAvatar = () => {
+    if (user) {
+      const savedAvatar = localStorage.getItem(`avatar_${user.id}`);
+      return savedAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=business&backgroundColor=b6e3f4';
+    }
+    return 'https://api.dicebear.com/7.x/avataaars/svg?seed=business&backgroundColor=b6e3f4';
   };
 
   return (
@@ -41,39 +53,61 @@ const FuturisticHeader = () => {
         <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 md:space-x-reverse">
           <LanguageSwitcher />
           
-          <div className="text-center">
-            <div className="text-primary text-xs md:text-sm font-mono">{t('currentTime')}</div>
-            <div className="text-xs text-accent font-mono">{currentTime}</div>
-          </div>
-          
           {user && (
             <div className="flex items-center space-x-2 space-x-reverse">
               <div className="flex items-center space-x-2 space-x-reverse text-sm">
                 <span className="text-foreground">
                   {user.user_metadata?.username || user.email?.split('@')[0] || 'مستخدم'}
                 </span>
-                {user.email === 'yahyamanouni2@gmail.com' && (
-                  <span className="bg-red-600 text-white px-2 py-1 rounded text-xs">
-                    {language === 'ar' ? 'أدمن' : 'Admin'}
-                  </span>
+                {isAdmin && (
+                  <div className="relative">
+                    <Shield 
+                      className="h-5 w-5 text-yellow-500 animate-pulse drop-shadow-lg" 
+                      style={{
+                        filter: 'drop-shadow(0 0 8px rgba(234, 179, 8, 0.6)) drop-shadow(0 0 12px rgba(234, 179, 8, 0.4))'
+                      }}
+                    />
+                    <div className="absolute inset-0 animate-ping">
+                      <Shield className="h-5 w-5 text-yellow-400 opacity-30" />
+                    </div>
+                  </div>
                 )}
               </div>
-              <Button 
-                onClick={() => navigate('/profile')}
-                variant="ghost"
-                size="icon"
-                className="text-primary hover:bg-accent/20"
-                title={language === 'ar' ? 'الملف الشخصي' : 'Profile'}
-              >
-                <User className="h-5 w-5" />
-              </Button>
-              <Button 
-                onClick={handleLogout}
-                className="neural-btn text-xs md:text-sm px-3 py-2 min-w-[100px]"
-                variant="outline"
-              >
-                {t('logout')}
-              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={getUserAvatar()} />
+                      <AvatarFallback>
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-background/95 backdrop-blur-sm border-primary/20" align="end">
+                  <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    {language === 'ar' ? 'الملف الشخصي' : 'Profile'}
+                  </DropdownMenuItem>
+                  
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate('/admin-dashboard')} className="cursor-pointer">
+                        <Shield className="mr-2 h-4 w-4 text-yellow-500" />
+                        {language === 'ar' ? 'لوحة تحكم الأدمن' : 'Admin Dashboard'}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 dark:text-red-400">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {t('logout')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
           
