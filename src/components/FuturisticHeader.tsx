@@ -111,11 +111,13 @@ const FuturisticHeader = () => {
             </div>
           )}
           
-          <div className="text-center">
-            <div className="text-primary text-xs md:text-sm font-mono">{t('systemStatus')}</div>
-            <div className="text-xs text-accent">{t('connected')}</div>
+          {/* Green connection status button */}
+          <div className="w-4 h-4 bg-green-500 rounded-full pulse-glow animate-pulse shadow-lg" 
+               style={{
+                 filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6)) drop-shadow(0 0 12px rgba(34, 197, 94, 0.4))'
+               }}
+               title={language === 'ar' ? 'متصل' : 'Connected'}>
           </div>
-          <div className="w-2 h-8 md:h-12 bg-gradient-to-t from-primary to-accent rounded-full pulse-glow"></div>
         </div>
       </div>
       

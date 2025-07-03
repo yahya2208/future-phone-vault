@@ -27,25 +27,47 @@ const AdminCodeGeneration = () => {
     }
 
     setIsGenerating(true);
+    const codes: string[] = [];
+    
     try {
-      const codes: string[] = [];
-      
-      for (let i = 0; i < codeQuantity; i++) {
-        const code = `PV-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-        
-        const { error } = await supabase
-          .from('activation_codes')
-          .insert({
-            code_hash: code,
-            user_email: 'yahyamanouni2@gmail.com',
-            subscription_duration_months: 12,
-            code_type: 'subscription',
-            created_by_admin: true
-          });
+      // استخدام الدالة المدمجة في قاعدة البيانات
+      const { data, error } = await supabase.rpc('generate_activation_codes', {
+        p_quantity: codeQuantity,
+        p_admin_email: 'yahyamanouni2@gmail.com',
+        p_duration_months: 12,
+        p_code_type: 'subscription'
+      });
 
-        if (!error) {
-          codes.push(code);
+      if (error) {
+        console.error('Database function error:', error);
+        // إذا فشلت الدالة، نستخدم الطريقة اليدوية
+        for (let i = 0; i < codeQuantity; i++) {
+          const code = `PV-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+          
+          const { error: insertError } = await supabase
+            .from('activation_codes')
+            .insert({
+              code_hash: code,
+              user_email: 'yahyamanouni2@gmail.com',
+              subscription_duration_months: 12,
+              code_type: 'subscription',
+              created_by_admin: true,
+              expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+            });
+
+          if (!insertError) {
+            codes.push(code);
+          } else {
+            console.error('Insert error:', insertError);
+          }
         }
+      } else {
+        // إذا نجحت الدالة، نستخرج الأكواد من النتيجة
+        data?.forEach((item: any) => {
+          if (item.code) {
+            codes.push(item.code);
+          }
+        });
       }
 
       setActivationCodes(codes);
@@ -73,7 +95,7 @@ const AdminCodeGeneration = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'activation_codes.txt';
+    a.download = `activation_codes_${new Date().toISOString().split('T')[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

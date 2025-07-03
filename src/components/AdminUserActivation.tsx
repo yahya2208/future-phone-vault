@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 
 const AdminUserActivation = () => {
   const [isActivating, setIsActivating] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [username, setUsername] = useState('');
   const [foundUser, setFoundUser] = useState<any>(null);
   const { toast } = useToast();
@@ -26,6 +27,7 @@ const AdminUserActivation = () => {
       return;
     }
 
+    setIsSearching(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -56,6 +58,8 @@ const AdminUserActivation = () => {
         description: language === 'ar' ? "حدث خطأ أثناء البحث" : "Error occurred while searching",
         variant: "destructive"
       });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -74,11 +78,26 @@ const AdminUserActivation = () => {
           activation_type: 'admin_activated',
           activated_at: new Date().toISOString(),
           max_trial_transactions: 999999,
-          trial_transactions_used: 0
+          trial_transactions_used: 0,
+          subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
         });
 
       if (activationError) {
         throw activationError;
+      }
+
+      // Update profile to set admin status if needed
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          plan_type: 'premium',
+          max_transactions: 999999,
+          subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        })
+        .eq('id', foundUser.id);
+
+      if (profileError) {
+        console.error('Profile update error:', profileError);
       }
 
       toast({
@@ -122,8 +141,13 @@ const AdminUserActivation = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder={language === 'ar' ? 'أدخل الاسم المستعار' : 'Enter username'}
                 className="flex-1"
+                onKeyPress={(e) => e.key === 'Enter' && searchUser()}
               />
-              <Button onClick={searchUser} variant="outline">
+              <Button 
+                onClick={searchUser} 
+                variant="outline"
+                disabled={isSearching}
+              >
                 <Search className="h-4 w-4" />
               </Button>
             </div>
@@ -137,6 +161,7 @@ const AdminUserActivation = () => {
               <div className="space-y-1 text-sm">
                 <p><strong>{language === 'ar' ? 'الاسم:' : 'Name:'}</strong> {foundUser.username}</p>
                 <p><strong>{language === 'ar' ? 'الإيميل:' : 'Email:'}</strong> {foundUser.email}</p>
+                <p><strong>{language === 'ar' ? 'نوع الخطة:' : 'Plan Type:'}</strong> {foundUser.plan_type || 'trial'}</p>
               </div>
               
               <Button 
