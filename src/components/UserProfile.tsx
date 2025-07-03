@@ -166,12 +166,15 @@ const UserProfile = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (activationData && activationData.is_activated) {
+      if (activationData && activationData.is_active) {
+        const transactionsUsed = activationData.transactions_remaining ? 
+          (1000 - activationData.transactions_remaining) : 0;
+        
         setProfile(prev => ({
           ...prev,
           subscription_status: 'active',
-          trial_transactions_used: activationData.trial_transactions_used || 0,
-          max_trial_transactions: activationData.max_trial_transactions || 3
+          trial_transactions_used: transactionsUsed,
+          max_trial_transactions: 1000
         }));
       } else {
         const { data: transactionsData } = await supabase

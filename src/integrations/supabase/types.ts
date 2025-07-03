@@ -65,6 +65,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           email: string
           id: string
@@ -76,6 +77,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           email: string
           id: string
@@ -87,6 +89,7 @@ export type Database = {
           username: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -191,33 +194,39 @@ export type Database = {
       }
       user_activations: {
         Row: {
-          activation_date: string
+          activated_at: string | null
+          activation_code: string | null
+          activation_type: string | null
           created_at: string | null
-          expires_at: string | null
           id: string
-          is_active: boolean
-          transactions_remaining: number | null
+          is_activated: boolean
+          is_admin: boolean | null
           updated_at: string | null
+          user_email: string
           user_id: string
         }
         Insert: {
-          activation_date?: string
+          activated_at?: string | null
+          activation_code?: string | null
+          activation_type?: string | null
           created_at?: string | null
-          expires_at?: string | null
           id?: string
-          is_active?: boolean
-          transactions_remaining?: number | null
+          is_activated?: boolean
+          is_admin?: boolean | null
           updated_at?: string | null
+          user_email: string
           user_id: string
         }
         Update: {
-          activation_date?: string
+          activated_at?: string | null
+          activation_code?: string | null
+          activation_type?: string | null
           created_at?: string | null
-          expires_at?: string | null
           id?: string
-          is_active?: boolean
-          transactions_remaining?: number | null
+          is_activated?: boolean
+          is_admin?: boolean | null
           updated_at?: string | null
+          user_email?: string
           user_id?: string
         }
         Relationships: []
