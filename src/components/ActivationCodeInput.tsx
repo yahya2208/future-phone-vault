@@ -125,7 +125,7 @@ const ActivationCodeInput = () => {
         }
 
         // Type guard to check if data is an object with success property
-        const responseData = data as ActivationResponse;
+        const responseData = data as unknown as ActivationResponse;
         if (!responseData || typeof responseData !== 'object' || !responseData.success) {
           toast({
             title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
