@@ -9,6 +9,15 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+// Type for the database function response
+interface ActivationResponse {
+  success: boolean;
+  code_type?: string;
+  is_admin?: boolean;
+  subscription_duration?: number;
+  message?: string;
+}
+
 const ActivationCodeInput = () => {
   const [activationCode, setActivationCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,7 +115,18 @@ const ActivationCodeInput = () => {
 
         console.log('Database function result:', data, 'Error:', error);
 
-        if (error || !data || (typeof data === 'object' && !data.success)) {
+        if (error || !data) {
+          toast({
+            title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
+            description: language === 'ar' ? "كود غير صحيح أو منتهي الصلاحية" : "Invalid or expired activation code",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Type guard to check if data is an object with success property
+        const responseData = data as ActivationResponse;
+        if (!responseData || typeof responseData !== 'object' || !responseData.success) {
           toast({
             title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
             description: language === 'ar' ? "كود غير صحيح أو منتهي الصلاحية" : "Invalid or expired activation code",
@@ -116,38 +136,36 @@ const ActivationCodeInput = () => {
         }
 
         // Handle successful activation from database function
-        if (typeof data === 'object' && data.success) {
-          const subscriptionDuration = typeof data.subscription_duration === 'number' ? data.subscription_duration : 12;
-          
-          const { error: activationError } = await supabase
-            .from('user_activations')
-            .upsert({
-              user_id: user.id,
-              user_email: user.email || '',
-              is_activated: true,
-              activation_type: data.code_type || 'subscription',
-              activated_at: new Date().toISOString(),
-              trial_ends_at: data.code_type === 'lifetime' 
-                ? new Date(Date.now() + 50 * 365 * 24 * 60 * 60 * 1000).toISOString()
-                : new Date(Date.now() + (subscriptionDuration * 30 * 24 * 60 * 60 * 1000)).toISOString(),
-              is_admin: data.is_admin || false,
-              max_trial_transactions: data.code_type === 'gift' ? 10 : 999999,
-              used_trial_transactions: 0
-            });
-
-          if (activationError) {
-            console.error('Activation record error:', activationError);
-          }
-
-          toast({
-            title: language === 'ar' ? "نجح التفعيل!" : "Activation Successful!",
-            description: typeof data.message === 'string' ? data.message : (language === 'ar' ? "تم تفعيل حسابك بنجاح!" : "Your account has been activated successfully!")
+        const subscriptionDuration = typeof responseData.subscription_duration === 'number' ? responseData.subscription_duration : 12;
+        
+        const { error: activationError } = await supabase
+          .from('user_activations')
+          .upsert({
+            user_id: user.id,
+            user_email: user.email || '',
+            is_activated: true,
+            activation_type: responseData.code_type || 'subscription',
+            activated_at: new Date().toISOString(),
+            trial_ends_at: responseData.code_type === 'lifetime' 
+              ? new Date(Date.now() + 50 * 365 * 24 * 60 * 60 * 1000).toISOString()
+              : new Date(Date.now() + (subscriptionDuration * 30 * 24 * 60 * 60 * 1000)).toISOString(),
+            is_admin: responseData.is_admin || false,
+            max_trial_transactions: responseData.code_type === 'gift' ? 10 : 999999,
+            used_trial_transactions: 0
           });
-          
-          setActivationCode('');
-          setTimeout(() => window.location.reload(), 1500);
-          return;
+
+        if (activationError) {
+          console.error('Activation record error:', activationError);
         }
+
+        toast({
+          title: language === 'ar' ? "نجح التفعيل!" : "Activation Successful!",
+          description: typeof responseData.message === 'string' ? responseData.message : (language === 'ar' ? "تم تفعيل حسابك بنجاح!" : "Your account has been activated successfully!")
+        });
+        
+        setActivationCode('');
+        setTimeout(() => window.location.reload(), 1500);
+        return;
       } else {
         // Code found directly, mark as used and activate
         const { error: updateError } = await supabase
