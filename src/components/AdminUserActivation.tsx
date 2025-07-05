@@ -29,12 +29,15 @@ const AdminUserActivation = () => {
 
     setIsSearching(true);
     try {
+      console.log('Searching for username:', username.trim());
+      
       // البحث بطريقة أكثر مرونة
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .ilike('username', `%${username.trim()}%`)
-        .limit(1);
+        .ilike('username', `%${username.trim()}%`);
+
+      console.log('Search results:', data, 'Error:', error);
 
       if (error) {
         console.error('Search error:', error);
@@ -47,14 +50,15 @@ const AdminUserActivation = () => {
       }
 
       if (!data || data.length === 0) {
-        // محاولة البحث بطريقة أخرى
+        // محاولة البحث بطريقة أخرى - البحث الدقيق
         const { data: exactData, error: exactError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('username', username.trim())
-          .single();
+          .eq('username', username.trim());
 
-        if (exactError || !exactData) {
+        console.log('Exact search results:', exactData, 'Error:', exactError);
+
+        if (exactError || !exactData || exactData.length === 0) {
           toast({
             title: language === 'ar' ? "لم يتم العثور على المستخدم" : "User Not Found",
             description: language === 'ar' ? "لا يوجد مستخدم بهذا الاسم المستعار" : "No user found with this username",
@@ -63,20 +67,20 @@ const AdminUserActivation = () => {
           setFoundUser(null);
           return;
         }
-        setFoundUser(exactData);
+        setFoundUser(exactData[0]);
       } else {
         setFoundUser(data[0]);
       }
 
       toast({
         title: language === 'ar' ? "تم العثور على المستخدم" : "User Found",
-        description: language === 'ar' ? `العثور على: ${foundUser?.username || data[0]?.username}` : `Found: ${foundUser?.username || data[0]?.username}`
+        description: language === 'ar' ? `العثور على: ${data[0]?.username || foundUser?.username}` : `Found: ${data[0]?.username || foundUser?.username}`
       });
 
     } catch (error) {
       console.error('Search user error:', error);
       toast({
-        title: language === 'ar' ? "خطأ" : "Error",
+        title: language === 'ar' ? "خطأ" : "Error",  
         description: language === 'ar' ? "حدث خطأ أثناء البحث" : "Error occurred while searching",
         variant: "destructive"
       });
@@ -90,22 +94,27 @@ const AdminUserActivation = () => {
 
     setIsActivating(true);
     try {
-      // Create or update user activation
+      console.log('Activating user:', foundUser);
+
+      // Create or update user activation with correct field names
       const { error: activationError } = await supabase
         .from('user_activations')
         .upsert({
           user_id: foundUser.id,
-          is_active: true,
-          activation_date: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          transactions_remaining: 999999
+          user_email: foundUser.email,
+          is_activated: true,
+          activated_at: new Date().toISOString(),
+          trial_ends_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          max_trial_transactions: 999999,
+          used_trial_transactions: 0
         });
 
       if (activationError) {
+        console.error('Activation error:', activationError);
         throw activationError;
       }
 
-      // Update profile to set admin status if needed
+      // Update profile to set premium plan
       const { error: profileError } = await supabase
         .from('profiles')
         .update({

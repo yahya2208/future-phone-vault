@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -166,15 +165,15 @@ const UserProfile = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (activationData && activationData.is_active) {
-        const transactionsUsed = activationData.transactions_remaining ? 
-          (1000 - activationData.transactions_remaining) : 0;
+      if (activationData && activationData.is_activated) {
+        const transactionsUsed = activationData.used_trial_transactions || 0;
+        const maxTransactions = activationData.max_trial_transactions || 1000;
         
         setProfile(prev => ({
           ...prev,
           subscription_status: 'active',
           trial_transactions_used: transactionsUsed,
-          max_trial_transactions: 1000
+          max_trial_transactions: maxTransactions
         }));
       } else {
         const { data: transactionsData } = await supabase

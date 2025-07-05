@@ -31,58 +31,80 @@ const AdminCodeGeneration = () => {
     const codes: string[] = [];
     
     try {
-      // استخدام الدالة المدمجة في قاعدة البيانات
-      const { data, error } = await supabase.rpc('generate_activation_codes', {
-        p_quantity: codeQuantity,
-        p_admin_email: 'yahyamanouni2@gmail.com',
-        p_duration_months: 12,
-        p_code_type: 'subscription'
-      });
+      console.log('Starting code generation process...');
+      
+      // الطريقة الأولى: استخدام الدالة المدمجة
+      try {
+        const { data, error } = await supabase.rpc('generate_activation_codes', {
+          p_quantity: codeQuantity,
+          p_admin_email: 'yahyamanouni2@gmail.com',
+          p_duration_months: 12,
+          p_code_type: 'subscription'
+        });
 
-      if (error) {
-        console.error('Database function error:', error);
-        // إذا فشلت الدالة، نستخدم الطريقة اليدوية
+        if (data && Array.isArray(data) && data.length > 0) {
+          data.forEach((item: any) => {
+            if (item.code) {
+              codes.push(item.code);
+            }
+          });
+          console.log('Database function succeeded, generated codes:', codes.length);
+        } else if (error) {
+          console.log('Database function failed, trying manual method:', error);
+          throw error;
+        }
+      } catch (dbError) {
+        console.log('Database function failed, using manual generation:', dbError);
+        
+        // الطريقة اليدوية: توليد الأكواد مباشرة
         for (let i = 0; i < codeQuantity; i++) {
           const code = `PV-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
           
-          const { error: insertError } = await supabase
-            .from('activation_codes')
-            .insert({
-              code_hash: code,
-              user_email: 'yahyamanouni2@gmail.com',
-              subscription_duration_months: 12,
-              code_type: 'subscription',
-              created_by_admin: true,
-              expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-            });
+          try {
+            const { error: insertError } = await supabase
+              .from('activation_codes')
+              .insert({
+                code_hash: code,
+                user_email: 'yahyamanouni2@gmail.com',
+                subscription_duration_months: 12,
+                code_type: 'subscription',
+                created_by_admin: true,
+                expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+              });
 
-          if (!insertError) {
-            codes.push(code);
-          } else {
-            console.error('Insert error:', insertError);
+            if (!insertError) {
+              codes.push(code);
+              console.log(`Generated code ${i + 1}:`, code);
+            } else {
+              console.error(`Error inserting code ${i + 1}:`, insertError);
+            }
+          } catch (insertError) {
+            console.error(`Failed to insert code ${i + 1}:`, insertError);
           }
         }
-      } else {
-        // إذا نجحت الدالة، نستخرج الأكواد من النتيجة
-        data?.forEach((item: any) => {
-          if (item.code) {
-            codes.push(item.code);
-          }
-        });
       }
 
+      console.log('Final generated codes:', codes);
       setActivationCodes(codes);
       
-      toast({
-        title: language === 'ar' ? "تم توليد الأكواد" : "Codes Generated",
-        description: language === 'ar' ? `تم توليد ${codes.length} كود تفعيل` : `Generated ${codes.length} activation codes`
-      });
+      if (codes.length > 0) {
+        toast({
+          title: language === 'ar' ? "تم توليد الأكواد" : "Codes Generated",
+          description: language === 'ar' ? `تم توليد ${codes.length} كود تفعيل بنجاح` : `Successfully generated ${codes.length} activation codes`
+        });
+      } else {
+        toast({
+          title: language === 'ar' ? "خطأ" : "Error",
+          description: language === 'ar' ? "فشل في توليد الأكواد" : "Failed to generate codes",
+          variant: "destructive"
+        });
+      }
 
     } catch (error) {
       console.error('Generate codes error:', error);
       toast({
         title: language === 'ar' ? "خطأ" : "Error",
-        description: language === 'ar' ? "حدث خطأ غير متوقع" : "An unexpected error occurred",
+        description: language === 'ar' ? "حدث خطأ أثناء توليد الأكواد" : "Error occurred while generating codes",
         variant: "destructive"
       });
     } finally {
@@ -183,7 +205,7 @@ const AdminCodeGeneration = () => {
                 <div className="space-y-2 text-sm font-mono">
                   {activationCodes.slice(0, 10).map((code, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded border">
-                      <span className="text-gray-900 dark:text-gray-100 font-bold text-base select-all">
+                      <span className="text-gray-900 dark:text-gray-100 font-bold text-base select-all text-black dark:text-white">
                         {code}
                       </span>
                       <Button

@@ -67,6 +67,8 @@ const ActivationCodeInput = () => {
           description: language === 'ar' ? "حدث خطأ أثناء تفعيل حساب الأدمن" : "An error occurred while activating admin account",
           variant: "destructive"
         });
+      } finally {
+        setIsSubmitting(false);
       }
       return;
     }
@@ -83,26 +85,40 @@ const ActivationCodeInput = () => {
     setIsSubmitting(true);
 
     try {
-      // استخدام دالة التفعيل الموجودة
-      const { data, error } = await supabase.rpc('validate_activation_code', {
-        input_code: activationCode.trim(),
-        user_email: user.email || ''
-      });
+      console.log('Validating activation code:', activationCode.trim());
+      
+      // Check if code exists in activation_codes table directly
+      const { data: codeData, error: codeError } = await supabase
+        .from('activation_codes')
+        .select('*')
+        .eq('code_hash', activationCode.trim())
+        .eq('is_used', false)
+        .single();
 
-      if (error) {
-        console.error('Activation error:', error);
-        toast({
-          title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
-          description: language === 'ar' ? "حدث خطأ أثناء التفعيل" : "An error occurred during activation",
-          variant: "destructive"
+      console.log('Code validation result:', codeData, 'Error:', codeError);
+
+      if (codeError || !codeData) {
+        // Try using the database function as fallback
+        const { data, error } = await supabase.rpc('validate_activation_code', {
+          input_code: activationCode.trim(),
+          user_email: user.email || ''
         });
-        return;
-      }
 
-      if (data && typeof data === 'object' && 'success' in data) {
-        if (data.success) {
-          // إضافة سجل التفعيل في جدول user_activations
+        console.log('Database function result:', data, 'Error:', error);
+
+        if (error || !data || (typeof data === 'object' && !data.success)) {
+          toast({
+            title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
+            description: language === 'ar' ? "كود غير صحيح أو منتهي الصلاحية" : "Invalid or expired activation code",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Handle successful activation from database function
+        if (typeof data === 'object' && data.success) {
           const subscriptionDuration = typeof data.subscription_duration === 'number' ? data.subscription_duration : 12;
+          
           const { error: activationError } = await supabase
             .from('user_activations')
             .upsert({
@@ -111,13 +127,17 @@ const ActivationCodeInput = () => {
               is_activated: true,
               activation_type: data.code_type || 'subscription',
               activated_at: new Date().toISOString(),
-              subscription_expires_at: data.code_type === 'lifetime' 
+              trial_ends_at: data.code_type === 'lifetime' 
                 ? new Date(Date.now() + 50 * 365 * 24 * 60 * 60 * 1000).toISOString()
                 : new Date(Date.now() + (subscriptionDuration * 30 * 24 * 60 * 60 * 1000)).toISOString(),
               is_admin: data.is_admin || false,
               max_trial_transactions: data.code_type === 'gift' ? 10 : 999999,
-              trial_transactions_used: 0
-            } as any);
+              used_trial_transactions: 0
+            });
+
+          if (activationError) {
+            console.error('Activation record error:', activationError);
+          }
 
           toast({
             title: language === 'ar' ? "نجح التفعيل!" : "Activation Successful!",
@@ -125,28 +145,59 @@ const ActivationCodeInput = () => {
           });
           
           setActivationCode('');
-          // إعادة تحميل الصفحة لتحديث حالة الاشتراك
-          window.location.reload();
-        } else {
-          toast({
-            title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
-            description: typeof data.message === 'string' ? data.message : (language === 'ar' ? "كود غير صحيح أو منتهي الصلاحية" : "Invalid or expired code"),
-            variant: "destructive"
-          });
+          setTimeout(() => window.location.reload(), 1500);
+          return;
         }
       } else {
+        // Code found directly, mark as used and activate
+        const { error: updateError } = await supabase
+          .from('activation_codes')
+          .update({
+            is_used: true,
+            used_at: new Date().toISOString(),
+            used_by: user.id
+          })
+          .eq('id', codeData.id);
+
+        if (updateError) {
+          console.error('Error updating code:', updateError);
+          throw updateError;
+        }
+
+        // Create activation record
+        const { error: activationError } = await supabase
+          .from('user_activations')
+          .upsert({
+            user_id: user.id,
+            user_email: user.email || '',
+            is_activated: true,
+            activation_type: codeData.code_type || 'subscription',
+            activated_at: new Date().toISOString(),
+            trial_ends_at: new Date(Date.now() + (codeData.subscription_duration_months || 12) * 30 * 24 * 60 * 60 * 1000).toISOString(),
+            is_admin: codeData.is_admin_code || false,
+            max_trial_transactions: 999999,
+            used_trial_transactions: 0
+          });
+
+        if (activationError) {
+          console.error('Activation record error:', activationError);
+        }
+
         toast({
-          title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
-          description: language === 'ar' ? "كود غير صحيح أو منتهي الصلاحية" : "Invalid or expired code",
-          variant: "destructive"
+          title: language === 'ar' ? "نجح التفعيل!" : "Activation Successful!",
+          description: language === 'ar' ? "تم تفعيل حسابك بنجاح!" : "Your account has been activated successfully!"
         });
+        
+        setActivationCode('');
+        setTimeout(() => window.location.reload(), 1500);
+        return;
       }
 
     } catch (error) {
       console.error('Activation error:', error);
       toast({
         title: language === 'ar' ? "خطأ" : "Error",
-        description: language === 'ar' ? "حدث خطأ غير متوقع" : "An unexpected error occurred",
+        description: language === 'ar' ? "حدث خطأ أثناء التفعيل" : "An error occurred during activation",
         variant: "destructive"
       });
     } finally {
