@@ -3,6 +3,8 @@ import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import FuturisticHeader from '@/components/FuturisticHeader';
 import AdminCodeGeneration from '@/components/AdminCodeGeneration';
 import AdminUserActivation from '@/components/AdminUserActivation';
@@ -42,10 +44,28 @@ const AdminDashboard = () => {
         <FuturisticHeader />
         
         <div className="space-y-8">
-          <div className="text-center mb-8">
+          <div className="flex items-center justify-between mb-8">
             <h1 className="text-3xl font-bold text-primary glow-text">
               {language === 'ar' ? 'لوحة تحكم الأدمن' : 'Admin Dashboard'}
             </h1>
+            
+            <Button 
+              onClick={() => navigate('/')}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              {language === 'ar' ? (
+                <>
+                  <ArrowRight size={16} />
+                  العودة للرئيسية
+                </>
+              ) : (
+                <>
+                  <ArrowLeft size={16} />
+                  Back to Dashboard
+                </>
+              )}
+            </Button>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

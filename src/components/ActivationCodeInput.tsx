@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -102,11 +101,11 @@ const ActivationCodeInput = () => {
         .select('*')
         .eq('code_hash', activationCode.trim())
         .eq('is_used', false)
-        .single();
+        .maybeSingle();
 
       console.log('Code validation result:', codeData, 'Error:', codeError);
 
-      if (codeError || !codeData) {
+      if (!codeData) {
         // Try using the database function as fallback
         const { data, error } = await supabase.rpc('validate_activation_code', {
           input_code: activationCode.trim(),
@@ -126,7 +125,7 @@ const ActivationCodeInput = () => {
 
         // Type guard to check if data is an object with success property
         const responseData = data as unknown as ActivationResponse;
-        if (!responseData || typeof responseData !== 'object' || !responseData.success) {
+        if (!responseData || typeof responseData !== 'object' || !('success' in responseData) || !responseData.success) {
           toast({
             title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
             description: language === 'ar' ? "كود غير صحيح أو منتهي الصلاحية" : "Invalid or expired activation code",

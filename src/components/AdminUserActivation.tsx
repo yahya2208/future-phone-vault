@@ -31,34 +31,35 @@ const AdminUserActivation = () => {
     try {
       console.log('Searching for username:', username.trim());
       
-      // البحث بطريقة أكثر مرونة
-      const { data, error } = await supabase
+      // Search with exact match first, then partial match
+      let { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .ilike('username', `%${username.trim()}%`);
+        .eq('username', username.trim())
+        .single();
 
-      console.log('Search results:', data, 'Error:', error);
+      console.log('Exact search results:', data, 'Error:', error);
 
-      if (error) {
-        console.error('Search error:', error);
-        toast({
-          title: language === 'ar' ? "خطأ في البحث" : "Search Error",
-          description: language === 'ar' ? "حدث خطأ أثناء البحث" : "Error occurred while searching",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        // محاولة البحث بطريقة أخرى - البحث الدقيق
-        const { data: exactData, error: exactError } = await supabase
+      // If exact match fails, try case-insensitive search
+      if (error || !data) {
+        const { data: partialData, error: partialError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('username', username.trim());
+          .ilike('username', username.trim());
 
-        console.log('Exact search results:', exactData, 'Error:', exactError);
+        console.log('Partial search results:', partialData, 'Error:', partialError);
 
-        if (exactError || !exactData || exactData.length === 0) {
+        if (partialError) {
+          console.error('Search error:', partialError);
+          toast({
+            title: language === 'ar' ? "خطأ في البحث" : "Search Error",
+            description: language === 'ar' ? "حدث خطأ أثناء البحث" : "Error occurred while searching",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (!partialData || partialData.length === 0) {
           toast({
             title: language === 'ar' ? "لم يتم العثور على المستخدم" : "User Not Found",
             description: language === 'ar' ? "لا يوجد مستخدم بهذا الاسم المستعار" : "No user found with this username",
@@ -67,14 +68,15 @@ const AdminUserActivation = () => {
           setFoundUser(null);
           return;
         }
-        setFoundUser(exactData[0]);
-      } else {
-        setFoundUser(data[0]);
+
+        // Take the first result from partial search
+        data = partialData[0];
       }
 
+      setFoundUser(data);
       toast({
         title: language === 'ar' ? "تم العثور على المستخدم" : "User Found",
-        description: language === 'ar' ? `العثور على: ${data[0]?.username || foundUser?.username}` : `Found: ${data[0]?.username || foundUser?.username}`
+        description: language === 'ar' ? `العثور على: ${data.username}` : `Found: ${data.username}`
       });
 
     } catch (error) {
@@ -96,7 +98,7 @@ const AdminUserActivation = () => {
     try {
       console.log('Activating user:', foundUser);
 
-      // Create or update user activation with correct field names
+      // Create or update user activation
       const { error: activationError } = await supabase
         .from('user_activations')
         .upsert({
@@ -106,7 +108,8 @@ const AdminUserActivation = () => {
           activated_at: new Date().toISOString(),
           trial_ends_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
           max_trial_transactions: 999999,
-          used_trial_transactions: 0
+          used_trial_transactions: 0,
+          activation_type: 'admin_manual'
         });
 
       if (activationError) {

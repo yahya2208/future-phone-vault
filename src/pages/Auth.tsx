@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -126,21 +125,34 @@ const Auth = () => {
           return;
         }
         
+        // Check if user already exists first
+        const { data: existingUser } = await supabase.auth.signInWithPassword({
+          email,
+          password: 'dummy'  // We just want to check if email exists
+        });
+
         const { error } = await signUp(email, password, username);
         if (error) {
-          if (error.message.includes('already exists') || error.message.includes('موجود بالفعل')) {
+          if (error.message.includes('User already registered') || error.message.includes('already been registered')) {
+            setError('هذا البريد الإلكتروني مُسجل بالفعل. يرجى تسجيل الدخول بدلاً من ذلك');
+          } else if (error.message.includes('already exists') || error.message.includes('موجود بالفعل')) {
             setError('اسم المستخدم موجود بالفعل، يرجى اختيار اسم آخر');
-          } else if (error.message.includes('User already registered')) {
-            setError('البريد الإلكتروني مُسجل بالفعل');
           } else {
             setError(error.message);
           }
         } else {
-          setError('تم إرسال رابط التفعيل إلى بريدك الإلكتروني');
+          toast({
+            title: "تم إنشاء الحساب",
+            description: "تم إرسال رابط التفعيل إلى بريدك الإلكتروني"
+          });
         }
       }
-    } catch (err) {
-      setError('حدث خطأ غير متوقع');
+    } catch (err: any) {
+      if (err.message && err.message.includes('User already registered')) {
+        setError('هذا البريد الإلكتروني مُسجل بالفعل. يرجى تسجيل الدخول بدلاً من ذلك');
+      } else {
+        setError('حدث خطأ غير متوقع');
+      }
     }
     
     setLoading(false);
