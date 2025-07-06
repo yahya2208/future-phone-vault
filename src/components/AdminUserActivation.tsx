@@ -28,55 +28,49 @@ const AdminUserActivation = () => {
     }
 
     setIsSearching(true);
+    setFoundUser(null);
+    
     try {
       console.log('Searching for username:', username.trim());
       
-      // Search with exact match first, then partial match
-      let { data, error } = await supabase
+      // Use a more flexible search approach
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('username', username.trim())
-        .single();
+        .or(`username.eq.${username.trim()},username.ilike.%${username.trim()}%`);
 
-      console.log('Exact search results:', data, 'Error:', error);
+      console.log('Search results:', data, 'Error:', error);
 
-      // If exact match fails, try case-insensitive search
-      if (error || !data) {
-        const { data: partialData, error: partialError } = await supabase
-          .from('profiles')
-          .select('*')
-          .ilike('username', username.trim());
-
-        console.log('Partial search results:', partialData, 'Error:', partialError);
-
-        if (partialError) {
-          console.error('Search error:', partialError);
-          toast({
-            title: language === 'ar' ? "خطأ في البحث" : "Search Error",
-            description: language === 'ar' ? "حدث خطأ أثناء البحث" : "Error occurred while searching",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        if (!partialData || partialData.length === 0) {
-          toast({
-            title: language === 'ar' ? "لم يتم العثور على المستخدم" : "User Not Found",
-            description: language === 'ar' ? "لا يوجد مستخدم بهذا الاسم المستعار" : "No user found with this username",
-            variant: "destructive"
-          });
-          setFoundUser(null);
-          return;
-        }
-
-        // Take the first result from partial search
-        data = partialData[0];
+      if (error) {
+        console.error('Search error:', error);
+        toast({
+          title: language === 'ar' ? "خطأ في البحث" : "Search Error",
+          description: language === 'ar' ? "حدث خطأ أثناء البحث" : "Error occurred while searching",
+          variant: "destructive"
+        });
+        return;
       }
 
-      setFoundUser(data);
+      if (!data || data.length === 0) {
+        toast({
+          title: language === 'ar' ? "لم يتم العثور على المستخدم" : "User Not Found",
+          description: language === 'ar' ? "لا يوجد مستخدم بهذا الاسم المستعار" : "No user found with this username",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // If multiple results, prioritize exact match
+      let selectedUser = data[0];
+      const exactMatch = data.find(user => user.username === username.trim());
+      if (exactMatch) {
+        selectedUser = exactMatch;
+      }
+
+      setFoundUser(selectedUser);
       toast({
         title: language === 'ar' ? "تم العثور على المستخدم" : "User Found",
-        description: language === 'ar' ? `العثور على: ${data.username}` : `Found: ${data.username}`
+        description: language === 'ar' ? `العثور على: ${selectedUser.username}` : `Found: ${selectedUser.username}`
       });
 
     } catch (error) {
@@ -110,6 +104,8 @@ const AdminUserActivation = () => {
           max_trial_transactions: 999999,
           used_trial_transactions: 0,
           activation_type: 'admin_manual'
+        }, {
+          onConflict: 'user_id'
         });
 
       if (activationError) {
