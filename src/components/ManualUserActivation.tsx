@@ -9,7 +9,7 @@ import { UserCheck, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-const AdminUserActivation = () => {
+const ManualUserActivation = () => {
   const [isActivating, setIsActivating] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [username, setUsername] = useState('');
@@ -31,44 +31,14 @@ const AdminUserActivation = () => {
     setFoundUser(null);
     
     try {
-      console.log('Searching for username:', username.trim());
-      
-      // First try exact match
-      const { data: exactData, error: exactError } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('username', username.trim());
+        .or(`username.eq.${username.trim()},username.ilike.%${username.trim()}%`)
+        .limit(1)
+        .single();
 
-      console.log('Exact match search:', exactData, exactError);
-
-      if (exactData && exactData.length > 0) {
-        setFoundUser(exactData[0]);
-        toast({
-          title: language === 'ar' ? "تم العثور على المستخدم" : "User Found",
-          description: language === 'ar' ? `العثور على: ${exactData[0].username}` : `Found: ${exactData[0].username}`
-        });
-        return;
-      }
-
-      // If no exact match, try case-insensitive partial match
-      const { data: partialData, error: partialError } = await supabase
-        .from('profiles')
-        .select('*')
-        .ilike('username', `%${username.trim()}%`);
-
-      console.log('Partial match search:', partialData, partialError);
-
-      if (partialError) {
-        console.error('Search error:', partialError);
-        toast({
-          title: language === 'ar' ? "خطأ في البحث" : "Search Error",
-          description: language === 'ar' ? "حدث خطأ أثناء البحث عن المستخدم" : "Error occurred while searching for user",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (!partialData || partialData.length === 0) {
+      if (error || !data) {
         toast({
           title: language === 'ar' ? "لم يتم العثور على المستخدم" : "User Not Found",
           description: language === 'ar' ? `لا يوجد مستخدم بالاسم "${username.trim()}"` : `No user found with username "${username.trim()}"`,
@@ -77,20 +47,17 @@ const AdminUserActivation = () => {
         return;
       }
 
-      // Show the first match from partial search
-      setFoundUser(partialData[0]);
+      setFoundUser(data);
       toast({
         title: language === 'ar' ? "تم العثور على المستخدم" : "User Found",
-        description: language === 'ar' ? 
-          `العثور على: ${partialData[0].username} ${partialData.length > 1 ? `(و ${partialData.length - 1} نتائج أخرى)` : ''}` : 
-          `Found: ${partialData[0].username} ${partialData.length > 1 ? `(and ${partialData.length - 1} more results)` : ''}`
+        description: language === 'ar' ? `العثور على: ${data.username}` : `Found: ${data.username}`
       });
 
     } catch (error) {
       console.error('Search user error:', error);
       toast({
         title: language === 'ar' ? "خطأ" : "Error",
-        description: language === 'ar' ? "حدث خطأ غير متوقع أثناء البحث" : "Unexpected error occurred while searching",
+        description: language === 'ar' ? "حدث خطأ أثناء البحث" : "Error occurred while searching",
         variant: "destructive"
       });
     } finally {
@@ -103,46 +70,7 @@ const AdminUserActivation = () => {
 
     setIsActivating(true);
     try {
-      console.log('Activating user:', foundUser);
-
-      // Check if user is already activated
-      const { data: existingActivation } = await supabase
-        .from('user_activations')
-        .select('*')
-        .eq('user_id', foundUser.id)
-        .maybeSingle();
-
-      if (existingActivation && existingActivation.is_activated) {
-        toast({
-          title: language === 'ar' ? "المستخدم مفعل مسبقاً" : "User Already Activated",
-          description: language === 'ar' ? `الحساب ${foundUser.username} مفعل بالفعل` : `Account ${foundUser.username} is already activated`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Create or update user activation
-      const { error: activationError } = await supabase
-        .from('user_activations')
-        .upsert({
-          user_id: foundUser.id,
-          user_email: foundUser.email,
-          is_activated: true,
-          activated_at: new Date().toISOString(),
-          trial_ends_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          max_trial_transactions: 999999,
-          used_trial_transactions: 0,
-          activation_type: 'admin_manual'
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (activationError) {
-        console.error('Activation error:', activationError);
-        throw activationError;
-      }
-
-      // Update profile to set premium plan
+      // تحديث بيانات المستخدم
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -154,15 +82,34 @@ const AdminUserActivation = () => {
 
       if (profileError) {
         console.error('Profile update error:', profileError);
-        // Don't throw here as activation was successful
+        throw profileError;
+      }
+
+      // إنشاء سجل تفعيل
+      const { error: activationError } = await supabase
+        .from('user_activations')
+        .upsert({
+          user_id: foundUser.id,
+          user_email: foundUser.email,
+          is_activated: true,
+          activated_at: new Date().toISOString(),
+          trial_ends_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          max_trial_transactions: 999999,
+          used_trial_transactions: 0,
+          activation_type: 'manual'
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (activationError) {
+        console.error('Activation error:', activationError);
       }
 
       toast({
         title: language === 'ar' ? "تم التفعيل بنجاح" : "Activation Successful",
-        description: language === 'ar' ? `تم تفعيل حساب ${foundUser.username} بنجاح وتم منحه خطة مميزة` : `Successfully activated ${foundUser.username}'s account with premium plan`
+        description: language === 'ar' ? `تم تفعيل حساب ${foundUser.username} بنجاح` : `Successfully activated ${foundUser.username}'s account`
       });
 
-      // Clear the form
       setFoundUser(null);
       setUsername('');
 
@@ -170,7 +117,7 @@ const AdminUserActivation = () => {
       console.error('Activate user error:', error);
       toast({
         title: language === 'ar' ? "فشل التفعيل" : "Activation Failed",
-        description: language === 'ar' ? `فشل في تفعيل الحساب: ${error.message || 'خطأ غير معروف'}` : `Failed to activate account: ${error.message || 'Unknown error'}`,
+        description: language === 'ar' ? "فشل في تفعيل الحساب" : "Failed to activate account",
         variant: "destructive"
       });
     } finally {
@@ -183,7 +130,7 @@ const AdminUserActivation = () => {
       <CardHeader>
         <CardTitle className="text-primary flex items-center gap-2">
           <UserCheck size={20} />
-          {language === 'ar' ? 'تفعيل المستخدمين' : 'User Activation'}
+          {language === 'ar' ? 'التفعيل اليدوي للمستخدمين' : 'Manual User Activation'}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -228,7 +175,6 @@ const AdminUserActivation = () => {
                     {foundUser.plan_type || 'trial'}
                   </span>
                 </p>
-                <p><strong>{language === 'ar' ? 'أقصى معاملات:' : 'Max Transactions:'}</strong> {foundUser.max_transactions || 3}</p>
               </div>
               
               <Button 
@@ -240,7 +186,7 @@ const AdminUserActivation = () => {
                 <UserCheck className="mr-2 h-4 w-4" />
                 {isActivating 
                   ? (language === 'ar' ? 'جاري التفعيل...' : 'Activating...') 
-                  : (language === 'ar' ? 'تفعيل الحساب وترقية للنسخة المميزة' : 'Activate Account & Upgrade to Premium')
+                  : (language === 'ar' ? 'تفعيل الحساب (الدفع مسبق)' : 'Activate Account (Pre-paid)')
                 }
               </Button>
             </div>
@@ -251,4 +197,4 @@ const AdminUserActivation = () => {
   );
 };
 
-export default AdminUserActivation;
+export default ManualUserActivation;

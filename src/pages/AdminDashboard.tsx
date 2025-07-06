@@ -6,8 +6,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import FuturisticHeader from '@/components/FuturisticHeader';
-import AdminCodeGeneration from '@/components/AdminCodeGeneration';
-import AdminUserActivation from '@/components/AdminUserActivation';
+import SimpleCodeGenerator from '@/components/SimpleCodeGenerator';
+import ManualUserActivation from '@/components/ManualUserActivation';
 import FooterLinks from '@/components/FooterLinks';
 
 const AdminDashboard = () => {
@@ -67,10 +67,22 @@ const AdminDashboard = () => {
               )}
             </Button>
           </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800 mb-6">
+            <h2 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">
+              {language === 'ar' ? 'النظام الجديد للتفعيل:' : 'New Activation System:'}
+            </h2>
+            <ul className="text-sm text-amber-700 dark:text-amber-400 space-y-1">
+              <li>• {language === 'ar' ? 'توليد 200 كود تفعيل جاهز للاستخدام' : 'Generate 200 activation codes ready to use'}</li>
+              <li>• {language === 'ar' ? 'تقديم الأكواد للعملاء بعد الدفع' : 'Provide codes to customers after payment'}</li>
+              <li>• {language === 'ar' ? 'تفعيل الحسابات يدوياً بالاسم المستعار' : 'Manually activate accounts by username'}</li>
+              <li>• {language === 'ar' ? 'نظام بسيط وموثوق بدون أخطاء' : 'Simple and reliable system without errors'}</li>
+            </ul>
+          </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <AdminCodeGeneration />
-            <AdminUserActivation />
+            <SimpleCodeGenerator />
+            <ManualUserActivation />
           </div>
         </div>
         
