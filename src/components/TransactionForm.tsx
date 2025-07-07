@@ -3,6 +3,18 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+// Default warning messages in case translations are missing
+const defaultWarningMessages = {
+  en: {
+    title: 'Important Notice',
+    message: 'Please fill in all required fields marked with *'
+  },
+  ar: {
+    title: 'تنبيه هام',
+    message: 'يرجى ملء جميع الحقول المطلوبة والمشار إليها بعلامة *'
+  }
+};
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -39,9 +51,7 @@ interface TransactionFormProps {
 }
 
 const TransactionForm: React.FC<TransactionFormProps> = ({ 
-  onTransactionSave, 
-  transactionsUsed = 0, 
-  maxTransactions = 3 
+  onTransactionSave 
 }) => {
   const [formData, setFormData] = useState<TransactionData>({
     sellerName: '',
@@ -67,17 +77,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     return /^\d{15}$/.test(imei);
   };
 
-  const canAddTransaction = transactionsUsed < maxTransactions;
-
   const handleConfirmedSubmit = async () => {
-    if (!canAddTransaction) {
-      toast({
-        title: language === 'ar' ? "انتهت الفترة التجريبية" : "Trial Period Ended",
-        description: language === 'ar' ? "يرجى شراء كود تفعيل للمتابعة" : "Please purchase activation code to continue",
-        variant: "destructive"
-      });
-      return;
-    }
 
     // Use custom model if provided, otherwise use selected model
     const finalPhoneModel = formData.customPhoneModel || formData.phoneModel;
@@ -190,7 +190,16 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           <div className="space-y-6">
             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 mb-6">
               <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                <strong>{warningMessages[language].title}:</strong> {warningMessages[language].message}
+                <strong>{
+                  (warningMessages?.[language]?.title || 
+                   defaultWarningMessages[language]?.title || 
+                   defaultWarningMessages.en.title)
+                  }:
+                </strong>{
+                  ' ' + (warningMessages?.[language]?.message || 
+                        defaultWarningMessages[language]?.message || 
+                        defaultWarningMessages.en.message)
+                }
               </p>
             </div>
 
@@ -205,7 +214,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                   placeholder={language === 'ar' ? 'أدخل اسم البائع' : 'Enter seller name'}
                   value={formData.sellerName}
                   onChange={(e) => handleInputChange('sellerName', e.target.value)}
-                  disabled={!canAddTransaction}
                 />
               </div>
 
@@ -219,7 +227,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                   placeholder={language === 'ar' ? 'أدخل اسم المشتري' : 'Enter buyer name'}
                   value={formData.buyerName}
                   onChange={(e) => handleInputChange('buyerName', e.target.value)}
-                  disabled={!canAddTransaction}
                 />
               </div>
             </div>
@@ -245,7 +252,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                   value={formData.imei}
                   onChange={(e) => handleInputChange('imei', e.target.value.replace(/\D/g, '').slice(0, 15))}
                   maxLength={15}
-                  disabled={!canAddTransaction}
                 />
               </div>
 
@@ -259,7 +265,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                   className="quantum-input"
                   value={formData.purchaseDate}
                   onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
-                  disabled={!canAddTransaction}
                 />
               </div>
             </div>
@@ -281,7 +286,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 <AlertDialogTrigger asChild>
                   <Button 
                     className="neural-btn w-full md:w-auto" 
-                    disabled={isSubmitting || !canAddTransaction}
+                    disabled={isSubmitting}
                   >
                     <span className="font-['Orbitron'] font-bold">
                       {isSubmitting ? (language === 'ar' ? 'جاري المعالجة...' : 'Processing...') : (language === 'ar' ? 'معالجة المعاملة' : 'Process Transaction')}

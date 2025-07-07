@@ -1,13 +1,8 @@
-
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-<<<<<<< HEAD
     <external-path name="my_images" path="." />
     <cache-path name="my_cache_images" path="." />
-</paths>
-=======
     <external-files-path name="my_images" path="Pictures" />
     <external-files-path name="my_movies" path="Movies" />
     <files-path name="files" path="." />
 </paths>
->>>>>>> 0f9dfac151d3d72d984bb12b7584e5cd2ad1c151

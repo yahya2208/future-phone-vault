@@ -9,60 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      activation_codes: {
-        Row: {
-          activated_at: string | null
-          code_hash: string
-          code_type: string | null
-          created_at: string
-          created_by_admin: boolean | null
-          expires_at: string
-          id: string
-          is_admin_code: boolean | null
-          is_used: boolean | null
-          notes: string | null
-          subscription_duration_months: number | null
-          used: boolean | null
-          used_at: string | null
-          used_by: string | null
-          user_email: string
-        }
-        Insert: {
-          activated_at?: string | null
-          code_hash: string
-          code_type?: string | null
-          created_at?: string
-          created_by_admin?: boolean | null
-          expires_at?: string
-          id?: string
-          is_admin_code?: boolean | null
-          is_used?: boolean | null
-          notes?: string | null
-          subscription_duration_months?: number | null
-          used?: boolean | null
-          used_at?: string | null
-          used_by?: string | null
-          user_email: string
-        }
-        Update: {
-          activated_at?: string | null
-          code_hash?: string
-          code_type?: string | null
-          created_at?: string
-          created_by_admin?: boolean | null
-          expires_at?: string
-          id?: string
-          is_admin_code?: boolean | null
-          is_used?: boolean | null
-          notes?: string | null
-          subscription_duration_months?: number | null
-          used?: boolean | null
-          used_at?: string | null
-          used_by?: string | null
-          user_email?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -236,25 +182,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      activate_by_nickname: {
-        Args: { p_nickname: string }
-        Returns: Json
-      }
-      generate_activation_code: {
-        Args: { user_email: string }
-        Returns: string
-      }
-      generate_activation_codes: {
-        Args: {
-          p_quantity: number
-          p_admin_email: string
-          p_duration_months?: number
-          p_code_type?: string
-        }
-        Returns: {
-          code: string
-        }[]
-      }
       generate_gift_codes: {
         Args: Record<PropertyKey, never>
         Returns: {

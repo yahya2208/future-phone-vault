@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import FuturisticHeader from '@/components/FuturisticHeader';
 import UserProfile from '@/components/UserProfile';
-import ActivationCodeInput from '@/components/ActivationCodeInput';
 import FooterLinks from '@/components/FooterLinks';
 
 const Profile = () => {
@@ -40,13 +39,6 @@ const Profile = () => {
         
         <div className="space-y-8">
           <UserProfile />
-          
-          <div className="border-t pt-8">
-            <h2 className="text-2xl font-bold text-primary mb-6 text-center">
-              {language === 'ar' ? 'تفعيل الحساب' : 'Account Activation'}
-            </h2>
-            <ActivationCodeInput />
-          </div>
         </div>
         
         <FooterLinks />

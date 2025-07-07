@@ -154,7 +154,13 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   };
 
   const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations['ar']] || key;
+    try {
+      // Safely get the translation, return the key if not found
+      return translations[language]?.[key] || translations['en'][key] || key;
+    } catch (error) {
+      console.warn(`Translation error for key "${key}" in language "${language}"`);
+      return key;
+    }
   };
 
   return (

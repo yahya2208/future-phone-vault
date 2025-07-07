@@ -87,17 +87,38 @@ const Index = () => {
     if (!user) return;
     
     try {
+      // Use maybeSingle() instead of single() to handle cases where profile doesn't exist
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('is_admin')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Error fetching user profile:', profileError);
       }
 
-      const isAdmin = profileData?.is_admin || user.email === 'yahyamanouni2@gmail.com';
+      // If no profile exists, create one using an Edge Function
+      if (!profileData) {
+        try {
+          const { error: functionError } = await supabase.functions.invoke('create-user-profile', {
+            body: {
+              user_id: user.id,
+              email: user.email,
+              username: user.email?.split('@')[0] || 'user_' + Math.random().toString(36).substring(2, 11)
+            }
+          });
+          
+          if (functionError) {
+            console.error('Error invoking create-user-profile function:', functionError);
+          }
+        } catch (error) {
+          console.error('Error in create-user-profile function call:', error);
+        }
+      }
+
+      // Check admin status (default to false if no profile data)
+      const isAdmin = (profileData?.is_admin || user.email === 'yahyamanouni2@gmail.com') ?? false;
       
       const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
@@ -165,33 +186,57 @@ const Index = () => {
   };
 
   const handleTransactionSave = async (formData: any) => {
-    if (!user) return;
-
-    if (userProfile.subscription_status === 'trial' && userProfile.trial_transactions_used >= userProfile.max_trial_transactions) {
-      console.log('Trial limit reached');
+    if (!user) {
+      console.error('No user found');
       return;
     }
 
-    const { error } = await supabase
-      .from('transactions')
-      .insert({
-        user_id: user.id,
-        seller_name: formData.sellerName,
-        buyer_name: formData.buyerName,
-        phone_model: formData.customPhoneModel || formData.phoneModel,
-        brand: formData.brand,
-        imei: formData.imei,
-        purchase_date: formData.purchaseDate,
-        rating: formData.rating
-      });
+    console.log('Current user ID:', user.id);
+    
+    // Log the form data being saved
+    console.log('Saving transaction with data:', {
+      user_id: user.id,
+      seller_name: formData.sellerName,
+      buyer_name: formData.buyerName,
+      phone_model: formData.customPhoneModel || formData.phoneModel,
+      brand: formData.brand,
+      imei: formData.imei,
+      purchase_date: formData.purchaseDate,
+      rating: formData.rating
+    });
 
-    if (error) {
-      console.error('Error saving transaction:', error);
-      return;
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert([{
+          user_id: user.id,
+          seller_name: formData.sellerName,
+          buyer_name: formData.buyerName,
+          phone_model: formData.customPhoneModel || formData.phoneModel,
+          brand: formData.brand,
+          imei: formData.imei,
+          purchase_date: formData.purchaseDate,
+          rating: formData.rating,
+          created_at: new Date().toISOString()
+        }])
+        .select();
+
+      if (error) {
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+
+      console.log('Transaction saved successfully:', data);
+      fetchUserProfile();
+      fetchTransactions();
+    } catch (error) {
+      console.error('Failed to save transaction:', error);
     }
-
-    fetchUserProfile();
-    fetchTransactions();
   };
 
   if (loading) {

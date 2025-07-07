@@ -1,25 +1,21 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Download, Key } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Settings, Users, BarChart, Shield } from 'lucide-react';
+import UserList from './admin/UserList';
+import Reports from './admin/Reports';
 
 const AdminPanel = () => {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [activationCodes, setActivationCodes] = useState<string[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [codeQuantity, setCodeQuantity] = useState(1);
-  const { toast } = useToast();
-  const { language } = useLanguage();
+  const [activeTab, setActiveTab] = useState('users');
   const { user } = useAuth();
+  const { language } = useLanguage();
 
-  React.useEffect(() => {
+  useEffect(() => {
     checkAdminStatus();
   }, [user]);
 
@@ -29,166 +25,85 @@ const AdminPanel = () => {
     }
   };
 
-  const generateActivationCodes = async () => {
-    if (codeQuantity < 1 || codeQuantity > 500) {
-      toast({
-        title: language === 'ar' ? "خطأ" : "Error",
-        description: language === 'ar' ? "يجب أن يكون عدد الأكواد بين 1 و 500" : "Number of codes must be between 1 and 500",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      const codes: string[] = [];
-      
-      // توليد العدد المطلوب من الأكواد
-      for (let i = 0; i < codeQuantity; i++) {
-        const code = `PV-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-        
-        // إدراج الكود في قاعدة البيانات
-        const { error } = await supabase
-          .from('activation_codes')
-          .insert({
-            code_hash: code,
-            user_email: 'yahyamanouni2@gmail.com',
-            subscription_duration_months: 12,
-            code_type: 'subscription',
-            created_by_admin: true
-          });
-
-        if (!error) {
-          codes.push(code);
-        }
-      }
-
-      setActivationCodes(codes);
-      
-      toast({
-        title: language === 'ar' ? "تم توليد الأكواد" : "Codes Generated",
-        description: language === 'ar' ? `تم توليد ${codes.length} كود تفعيل` : `Generated ${codes.length} activation codes`
-      });
-
-    } catch (error) {
-      console.error('Generate codes error:', error);
-      toast({
-        title: language === 'ar' ? "خطأ" : "Error",
-        description: language === 'ar' ? "حدث خطأ غير متوقع" : "An unexpected error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const downloadCodes = () => {
-    const codesText = activationCodes.join('\n');
-    const blob = new Blob([codesText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'activation_codes.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   if (!isAdmin) {
     return (
       <div className="text-center p-8">
         <p className="text-muted-foreground">
-          {language === 'ar' ? 'غير مصرح لك بالوصول لهذه الصفحة' : 'You are not authorized to access this page'}
+          {language === 'ar' ? 'غير مصرح لك بالوصول إلى لوحة التحكم' : 'You are not authorized to access the admin panel'}
         </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-primary flex items-center gap-2">
-            <Key size={20} />
-            {language === 'ar' ? 'لوحة تحكم الأدمن' : 'Admin Panel'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-            <p className="text-blue-700 dark:text-blue-300">
-              {language === 'ar' ? 'مرحباً بك في لوحة تحكم الأدمن. يمكنك هنا إدارة أكواد التفعيل.' : 'Welcome to the Admin Panel. Here you can manage activation codes.'}
-            </p>
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {language === 'ar' ? 'لوحة التحكم' : 'Admin Dashboard'}
+          </h1>
+          <p className="text-muted-foreground">
+            {language === 'ar' 
+              ? 'إدارة المستخدمين وعرض إحصائيات النظام' 
+              : 'Manage users and view system statistics'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <Settings className="h-4 w-4 mr-2" />
+            {language === 'ar' ? 'الإعدادات' : 'Settings'}
+          </Button>
+        </div>
+      </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="codeQuantity">
-                {language === 'ar' ? 'عدد الأكواد المراد توليدها' : 'Number of codes to generate'}
-              </Label>
-              <Input
-                id="codeQuantity"
-                type="number"
-                min="1"
-                max="500"
-                value={codeQuantity}
-                onChange={(e) => setCodeQuantity(parseInt(e.target.value) || 1)}
-                className="w-full"
-                placeholder={language === 'ar' ? 'أدخل عدد الأكواد (1-500)' : 'Enter number of codes (1-500)'}
-              />
-            </div>
-            
-            <Button 
-              onClick={generateActivationCodes}
-              disabled={isGenerating}
-              className="w-full"
-            >
-              <Key className="mr-2 h-4 w-4" />
-              {isGenerating 
-                ? (language === 'ar' ? 'جاري توليد الأكواد...' : 'Generating Codes...') 
-                : (language === 'ar' ? `توليد ${codeQuantity} كود تفعيل` : `Generate ${codeQuantity} Activation Code${codeQuantity > 1 ? 's' : ''}`)
-              }
-            </Button>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full md:w-auto md:inline-flex">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            {language === 'ar' ? 'المستخدمين' : 'Users'}
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <BarChart className="h-4 w-4" />
+            {language === 'ar' ? 'التقارير' : 'Reports'}
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            {language === 'ar' ? 'الإعدادات' : 'Settings'}
+          </TabsTrigger>
+        </TabsList>
 
-            {activationCodes.length > 0 && (
-              <div className="space-y-4">
-                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                  <p className="text-green-700 dark:text-green-300 font-medium">
-                    {language === 'ar' ? `تم توليد ${activationCodes.length} كود تفعيل بنجاح!` : `Successfully generated ${activationCodes.length} activation codes!`}
-                  </p>
-                </div>
+        <TabsContent value="users" className="space-y-4">
+          <UserList />
+        </TabsContent>
 
-                <Button 
-                  onClick={downloadCodes}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  {language === 'ar' ? 'تحميل الأكواد' : 'Download Codes'}
-                </Button>
+        <TabsContent value="reports" className="space-y-4">
+          <Reports />
+        </TabsContent>
 
-                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg max-h-60 overflow-y-auto">
-                  <h3 className="font-semibold mb-2">
-                    {language === 'ar' ? 'معاينة الأكواد:' : 'Code Preview:'}
-                  </h3>
-                  <div className="space-y-1 text-sm font-mono">
-                    {activationCodes.slice(0, 10).map((code, index) => (
-                      <div key={index} className="p-1 bg-white dark:bg-gray-800 rounded border">
-                        {code}
-                      </div>
-                    ))}
-                    {activationCodes.length > 10 && (
-                      <div className="text-muted-foreground text-center py-2">
-                        {language === 'ar' ? `... و ${activationCodes.length - 10} كود آخر` : `... and ${activationCodes.length - 10} more codes`}
-                      </div>
-                    )}
-                  </div>
-                </div>
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {language === 'ar' ? 'إعدادات النظام' : 'System Settings'}
+              </CardTitle>
+              <CardDescription>
+                {language === 'ar'
+                  ? 'إعدادات متقدمة للنظام'
+                  : 'Advanced system settings'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] flex items-center justify-center bg-muted/50 rounded-md">
+                <p className="text-muted-foreground">
+                  {language === 'ar' 
+                    ? 'إعدادات النظام ستظهر هنا' 
+                    : 'System settings will appear here'}
+                </p>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

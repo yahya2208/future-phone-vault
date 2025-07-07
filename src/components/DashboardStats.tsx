@@ -8,6 +8,8 @@ interface DashboardStatsProps {
   topBrand: string;
   recentTransactions: number;
   averageRating: number;
+  transactionsUsed?: number;
+  maxTransactions?: number;
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({

@@ -94,7 +94,7 @@ const FuturisticHeader = () => {
                   {isAdmin && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate('/admin-dashboard')} className="cursor-pointer">
+                      <DropdownMenuItem onClick={() => navigate('/admin')} className="cursor-pointer">
                         <Shield className="mr-2 h-4 w-4 text-yellow-500" />
                         {language === 'ar' ? 'لوحة تحكم الأدمن' : 'Admin Dashboard'}
                       </DropdownMenuItem>
