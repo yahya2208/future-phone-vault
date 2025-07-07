@@ -147,7 +147,10 @@ export type Database = {
           id: string
           is_activated: boolean
           is_admin: boolean | null
+          max_trial_transactions: number | null
+          trial_ends_at: string | null
           updated_at: string | null
+          used_trial_transactions: number | null
           user_email: string
           user_id: string
         }
@@ -159,7 +162,10 @@ export type Database = {
           id?: string
           is_activated?: boolean
           is_admin?: boolean | null
+          max_trial_transactions?: number | null
+          trial_ends_at?: string | null
           updated_at?: string | null
+          used_trial_transactions?: number | null
           user_email: string
           user_id: string
         }
@@ -171,7 +177,10 @@ export type Database = {
           id?: string
           is_activated?: boolean
           is_admin?: boolean | null
+          max_trial_transactions?: number | null
+          trial_ends_at?: string | null
           updated_at?: string | null
+          used_trial_transactions?: number | null
           user_email?: string
           user_id?: string
         }
@@ -182,6 +191,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+<<<<<<< HEAD
+=======
+      activate_by_nickname: {
+        Args: { p_nickname: string }
+        Returns: Json
+      }
+      activate_user: {
+        Args: {
+          p_user_email: string
+          p_activation_type: string
+          p_activated_at: string
+          p_trial_ends_at: string
+        }
+        Returns: string
+      }
+      generate_activation_code: {
+        Args: { user_email: string }
+        Returns: string
+      }
+      generate_activation_codes: {
+        Args: {
+          p_quantity: number
+          p_admin_email: string
+          p_duration_months?: number
+          p_code_type?: string
+        }
+        Returns: {
+          code: string
+        }[]
+      }
+>>>>>>> d765a567f5fe8ba7f4c46a2fdc38c47a878b8c36
       generate_gift_codes: {
         Args: Record<PropertyKey, never>
         Returns: {
