@@ -102,12 +102,51 @@ const UserProfile = () => {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // التحقق من نوع الملف أولاً
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        toast({
+          title: language === 'ar' ? 'خطأ' : 'Error',
+          description: language === 'ar' 
+            ? 'نوع الملف غير مدعوم. يرجى اختيار صورة بصيغة JPG أو PNG' 
+            : 'File type not supported. Please choose a JPG or PNG image',
+          variant: 'destructive',
+        });
+        // إعادة تعيين input
+        e.target.value = '';
+        return;
+      }
+
+      // التحقق من حجم الملف
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        toast({
+          title: language === 'ar' ? 'خطأ' : 'Error',
+          description: language === 'ar' 
+            ? 'حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت' 
+            : 'File is too large. Maximum size is 5MB',
+          variant: 'destructive',
+        });
+        e.target.value = '';
+        return;
+      }
+      
       setAvatarFile(file);
       
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
+      };
+      reader.onerror = () => {
+        toast({
+          title: language === 'ar' ? 'خطأ' : 'Error',
+          description: language === 'ar' 
+            ? 'فشل في قراءة الملف' 
+            : 'Failed to read file',
+          variant: 'destructive',
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -120,45 +159,36 @@ const UserProfile = () => {
       return null;
     }
     
-    // التحقق من نوع الملف
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(avatarFile.type)) {
-      toast({
-        title: language === 'ar' ? 'خطأ' : 'Error',
-        description: language === 'ar' 
-          ? 'نوع الملف غير مدعوم. يرجى رفع صورة بصيغة JPG أو PNG أو GIF' 
-          : 'File type not supported. Please upload a JPG, PNG, or GIF image',
-        variant: 'destructive',
-      });
-      return null;
-    }
-
-    // التحقق من حجم الملف (5 ميجابايت كحد أقصى)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (avatarFile.size > maxSize) {
-      toast({
-        title: language === 'ar' ? 'خطأ' : 'Error',
-        description: language === 'ar' 
-          ? 'حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت' 
-          : 'File is too large. Maximum size is 5MB',
-        variant: 'destructive',
-      });
-      return null;
-    }
-    
     try {
-      const fileExt = avatarFile.name.split('.').pop();
+      const fileExt = avatarFile.name.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${authUser.id}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`; // تمت إزالة 'avatars/' من المسار
       
-      console.log('Uploading file:', { fileName, size: avatarFile.size, type: avatarFile.type });
+      console.log('Uploading file:', { 
+        fileName, 
+        size: avatarFile.size, 
+        type: avatarFile.type,
+        bucketPath: `avatars/${fileName}`
+      });
       
-      // رفع الملف مع خيارات إضافية
+      // حذف الصورة القديمة أولاً إن وجدت
+      if (profile.avatar_url) {
+        try {
+          const oldFileName = profile.avatar_url.split('/').pop();
+          if (oldFileName && oldFileName.includes(authUser.id)) {
+            await supabase.storage.from('avatars').remove([oldFileName]);
+          }
+        } catch (error) {
+          console.log('No old avatar to delete:', error);
+        }
+      }
+      
+      // رفع الملف الجديد
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, avatarFile, {
+        .upload(fileName, avatarFile, {
           cacheControl: '3600',
-          upsert: true
+          upsert: true,
+          contentType: avatarFile.type
         });
         
       if (uploadError) {
@@ -171,7 +201,7 @@ const UserProfile = () => {
       // الحصول على رابط عام
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
         
       console.log('Public URL:', publicUrl);
       return publicUrl;
@@ -180,7 +210,7 @@ const UserProfile = () => {
       toast({
         title: language === 'ar' ? 'خطأ' : 'Error',
         description: language === 'ar' 
-          ? `حدث خطأ أثناء رفع الصورة: ${error.message || 'يرجى المحاولة مرة أخرى'}` 
+          ? `فشل في رفع الصورة: ${error.message || 'يرجى المحاولة مرة أخرى'}` 
           : `Failed to upload avatar: ${error.message || 'Please try again'}`,
         variant: 'destructive',
       });
@@ -207,10 +237,16 @@ const UserProfile = () => {
       
       // Update profile
       const updates = {
-        ...profile,
         id: authUser.id,
+        email: authUser.email || profile.email || '',
+        username: profile.display_name || profile.username || '',
         avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
+        // إضافة الحقول الإضافية كـ metadata
+        display_name: profile.display_name,
+        bio: profile.bio,
+        phone: profile.phone,
+        location: profile.location,
       };
       
       const { error } = await supabase
@@ -294,7 +330,8 @@ const UserProfile = () => {
                       <Input
                         id="avatar-upload"
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        capture="environment"
                         className="hidden"
                         onChange={handleAvatarChange}
                         disabled={!isEditing}

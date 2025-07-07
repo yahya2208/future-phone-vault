@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function ProfileSettings() {
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
   const { language } = useLanguage();
   const [email, setEmail] = useState(user?.email || '');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -36,8 +36,7 @@ export default function ProfileSettings() {
         
       if (profileError) throw profileError;
       
-      // Update user context
-      await updateUser();
+      // Email updated successfully
       
       toast.success(language === 'ar' ? 'تم تحديث البريد الإلكتروني بنجاح' : 'Email updated successfully');
     } catch (error) {
