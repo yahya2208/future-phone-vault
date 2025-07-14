@@ -147,10 +147,15 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string
+          full_name: string | null
           id: string
           is_admin: boolean | null
           max_transactions: number | null
           plan_type: string | null
+          profile_picture: string | null
+          referral_code: string | null
+          referral_count: number | null
+          referral_rewards: number | null
           subscription_expires_at: string | null
           updated_at: string
           username: string
@@ -159,10 +164,15 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email: string
+          full_name?: string | null
           id: string
           is_admin?: boolean | null
           max_transactions?: number | null
           plan_type?: string | null
+          profile_picture?: string | null
+          referral_code?: string | null
+          referral_count?: number | null
+          referral_rewards?: number | null
           subscription_expires_at?: string | null
           updated_at?: string
           username: string
@@ -171,13 +181,101 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string
+          full_name?: string | null
           id?: string
           is_admin?: boolean | null
           max_transactions?: number | null
           plan_type?: string | null
+          profile_picture?: string | null
+          referral_code?: string | null
+          referral_count?: number | null
+          referral_rewards?: number | null
           subscription_expires_at?: string | null
           updated_at?: string
           username?: string
+        }
+        Relationships: []
+      }
+      referral_commissions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          paid_at: string | null
+          referral_id: string
+          referred_user_id: string
+          status: Database["public"]["Enums"]["commission_status"] | null
+          transaction_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          paid_at?: string | null
+          referral_id: string
+          referred_user_id: string
+          status?: Database["public"]["Enums"]["commission_status"] | null
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          paid_at?: string | null
+          referral_id?: string
+          referred_user_id?: string
+          status?: Database["public"]["Enums"]["commission_status"] | null
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_commissions_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string | null
+          current_uses: number | null
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          metadata: Json | null
+          referral_code: string
+          referred_user_id: string | null
+          referrer_id: string
+          status: Database["public"]["Enums"]["referral_status"] | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_uses?: number | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          metadata?: Json | null
+          referral_code: string
+          referred_user_id?: string | null
+          referrer_id: string
+          status?: Database["public"]["Enums"]["referral_status"] | null
+        }
+        Update: {
+          created_at?: string | null
+          current_uses?: number | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          metadata?: Json | null
+          referral_code?: string
+          referred_user_id?: string | null
+          referrer_id?: string
+          status?: Database["public"]["Enums"]["referral_status"] | null
         }
         Relationships: []
       }
@@ -269,7 +367,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_activations: {
         Row: {
@@ -337,6 +443,18 @@ export type Database = {
         }
         Returns: string
       }
+      check_admin_access: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      create_referral_code: {
+        Args: {
+          p_referrer_id: string
+          p_expires_at?: string
+          p_max_uses?: number
+        }
+        Returns: string
+      }
       generate_activation_code: {
         Args: { user_email: string }
         Returns: string
@@ -375,8 +493,20 @@ export type Database = {
         Returns: string
       }
       is_admin: {
+        Args: Record<PropertyKey, never> | { user_id: string }
+        Returns: boolean
+      }
+      is_admin_safe: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      process_referral: {
+        Args: { p_referral_code: string; p_referred_user_id: string }
+        Returns: string
+      }
+      set_user_admin: {
+        Args: { user_id: string; is_admin: boolean }
+        Returns: undefined
       }
       table_exists: {
         Args: { table_name: string }
@@ -388,7 +518,8 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      commission_status: "pending" | "paid" | "failed"
+      referral_status: "pending" | "completed" | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -515,6 +646,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      commission_status: ["pending", "paid", "failed"],
+      referral_status: ["pending", "completed", "expired"],
+    },
   },
 } as const

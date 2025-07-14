@@ -5,11 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { Users, Settings, BarChart, FileText, UserCog, Activity, Bell, Shield, KeyRound } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Users, Settings, BarChart, FileText, UserCog, Activity, Bell, Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import UserList from '@/components/admin/UserList';
+import Reports from '@/components/admin/Reports';
 
 const StatsCard = ({ title, value, icon: Icon, description }: { title: string; value: string | number; icon: React.ElementType; description?: string }) => (
   <Card>
@@ -47,22 +48,20 @@ const AdminDashboard = () => {
     const checkAdmin = async () => {
       if (!loading && !user) {
         navigate('/auth');
+        return;
       }
+      
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single();
-        
-        if (!profile?.is_admin) {
+        // التحقق من صلاحيات الإدارة
+        const adminEmails = ['yahyamanouni2@gmail.com', 'y220890@gmail.com'];
+        if (!adminEmails.includes(user.email || '')) {
           navigate('/');
-        } else {
-          // Load stats
-          await loadStats();
-          // Load recent activity
-          await loadRecentActivity();
+          return;
         }
+        
+        // تحميل الإحصائيات
+        await loadStats();
+        await loadRecentActivity();
       }
     };
 
@@ -71,56 +70,45 @@ const AdminDashboard = () => {
 
   const loadStats = async () => {
     try {
-      // Get total users from auth.users table
-      const { count: totalUsers, error: usersError } = await supabase
-        .from('users')
+      // جلب إجمالي المستخدمين
+      const { count: totalUsers } = await supabase
+        .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-      if (usersError) throw usersError;
+      // جلب المستخدمين النشطين
+      const { count: activeUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .neq('plan_type', 'trial');
 
-      // Get total transactions (only if we have permission)
-      let transactions = 0;
-      try {
-        const { count: transactionsCount } = await supabase
-          .from('transactions')
-          .select('*', { count: 'exact', head: true });
-        transactions = transactionsCount || 0;
-      } catch (transactionsError) {
-        console.warn('Could not fetch transactions count:', transactionsError);
-      }
+      // جلب إجمالي المعاملات
+      const { count: transactions } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact', head: true });
 
-      // Set stats with the data we could fetch
       setStats({
         totalUsers: totalUsers || 0,
-        activeUsers: 0, // Not available without admin permissions
-        transactions: transactions,
-        revenue: 0, // You can implement revenue calculation based on your business logic
+        activeUsers: activeUsers || 0,
+        transactions: transactions || 0,
+        revenue: 0, // يمكن حسابه لاحقاً
       });
     } catch (error) {
       console.error('Error loading stats:', error);
-      // Set default values on error
-      setStats({
-        totalUsers: 0,
-        activeUsers: 0,
-        transactions: 0,
-        revenue: 0,
-      });
     }
   };
 
   const loadRecentActivity = async () => {
     try {
-      // Example: Get recent user signups
-      const { data: signups } = await supabase
+      // جلب آخر المستخدمين المسجلين
+      const { data: newUsers } = await supabase
         .from('profiles')
-        .select('id, created_at')
+        .select('id, username, email, created_at')
         .order('created_at', { ascending: false })
         .limit(5);
 
-      // Format activity data
-      const activity = signups?.map(user => ({
+      const activity = newUsers?.map(user => ({
         id: user.id,
-        action: 'signed up',
+        action: `${user.username || user.email} ${language === 'ar' ? 'انضم للتطبيق' : 'joined the app'}`,
         timestamp: new Date(user.created_at).toLocaleString(),
       })) || [];
 
@@ -237,7 +225,7 @@ const AdminDashboard = () => {
                         <div key={activity.id} className="flex items-center space-x-4 p-2 hover:bg-muted/50 rounded-md">
                           <div className="flex-1">
                             <p className="text-sm font-medium leading-none">
-                              User {activity.id} {activity.action}
+                              {activity.action}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {activity.timestamp}
@@ -285,39 +273,11 @@ const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle>{language === 'ar' ? 'إدارة المستخدمين' : 'User Management'}</CardTitle>
-              <CardDescription>
-                {language === 'ar' 
-                  ? 'عرض وإدارة مستخدمي التطبيق' 
-                  : 'View and manage application users'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                {language === 'ar' ? 'قائمة المستخدمين ستظهر هنا' : 'User list will be displayed here'}
-              </div>
-            </CardContent>
-          </Card>
+          <UserList />
         </TabsContent>
 
         <TabsContent value="reports">
-          <Card>
-            <CardHeader>
-              <CardTitle>{language === 'ar' ? 'التقارير' : 'Reports'}</CardTitle>
-              <CardDescription>
-                {language === 'ar'
-                  ? 'عرض وتحليل بيانات التطبيق'
-                  : 'View and analyze application data'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                {language === 'ar' ? 'التقارير والرسوم البيانية ستظهر هنا' : 'Reports and charts will be displayed here'}
-              </div>
-            </CardContent>
-          </Card>
+          <Reports />
         </TabsContent>
       </Tabs>
     </div>
