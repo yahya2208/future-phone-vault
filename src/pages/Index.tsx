@@ -297,8 +297,7 @@ const Index = () => {
         <div className="space-y-8">
           <TransactionForm 
             onTransactionSave={handleTransactionSave}
-            transactionsUsed={userProfile.trial_transactions_used}
-            maxTransactions={userProfile.max_trial_transactions}
+            isLimitReached={userProfile.trial_transactions_used >= userProfile.max_trial_transactions}
           />
         </div>
         
