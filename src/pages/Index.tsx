@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -193,15 +192,27 @@ const Index = () => {
 
     console.log('Current user ID:', user.id);
     
+    // Map the form data to the database format
+    const dbFormData = {
+      sellerName: formData.seller_name,
+      buyerName: formData.buyer_name,
+      phoneModel: formData.phone_model,
+      brand: formData.brand,
+      imei: formData.imei,
+      purchaseDate: formData.purchase_date,
+      rating: formData.rating,
+      customPhoneModel: formData.phone_model
+    };
+    
     // Log the form data being saved
     console.log('Saving transaction with data:', {
       user_id: user.id,
-      seller_name: formData.sellerName,
-      buyer_name: formData.buyerName,
-      phone_model: formData.customPhoneModel || formData.phoneModel,
+      seller_name: formData.seller_name,
+      buyer_name: formData.buyer_name,
+      phone_model: formData.phone_model,
       brand: formData.brand,
       imei: formData.imei,
-      purchase_date: formData.purchaseDate,
+      purchase_date: formData.purchase_date,
       rating: formData.rating
     });
 
@@ -210,12 +221,15 @@ const Index = () => {
         .from('transactions')
         .insert([{
           user_id: user.id,
-          seller_name: formData.sellerName,
-          buyer_name: formData.buyerName,
-          phone_model: formData.customPhoneModel || formData.phoneModel,
+          seller_name: formData.seller_name,
+          seller_phone: formData.seller_phone,
+          seller_email: formData.seller_email,
+          buyer_name: formData.buyer_name,
+          buyer_email: formData.buyer_email,
+          phone_model: formData.phone_model,
           brand: formData.brand,
           imei: formData.imei,
-          purchase_date: formData.purchaseDate,
+          purchase_date: formData.purchase_date,
           rating: formData.rating,
           created_at: new Date().toISOString()
         }])
@@ -236,6 +250,7 @@ const Index = () => {
       fetchTransactions();
     } catch (error) {
       console.error('Failed to save transaction:', error);
+      throw error; // Re-throw so the TransactionForm can handle the error
     }
   };
 

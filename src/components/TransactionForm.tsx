@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +23,12 @@ interface TransactionFormData {
   rating: number;
 }
 
-const TransactionForm = () => {
+interface TransactionFormProps {
+  onTransactionSave: (formData: TransactionFormData) => Promise<void>;
+  isLimitReached: boolean;
+}
+
+const TransactionForm: React.FC<TransactionFormProps> = ({ onTransactionSave, isLimitReached }) => {
   const { user } = useAuth();
   const { language } = useLanguage();
   const [loading, setLoading] = useState(false);
@@ -39,7 +43,7 @@ const TransactionForm = () => {
     brand: '',
     phone_model: '',
     imei: '',
-    purchase_date: getTodayDate(), // Default to today
+    purchase_date: getTodayDate(),
     rating: 0
   });
 
@@ -63,6 +67,11 @@ const TransactionForm = () => {
       return;
     }
 
+    if (isLimitReached) {
+      toast.error(language === 'ar' ? 'تم الوصول إلى الحد الأقصى للمعاملات' : 'Transaction limit reached');
+      return;
+    }
+
     // Final date validation before submission
     const dateValidation = validateTransactionDate(new Date(formData.purchase_date));
     if (!dateValidation.isValid) {
@@ -73,17 +82,8 @@ const TransactionForm = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase
-        .from('transactions')
-        .insert([
-          {
-            ...formData,
-            user_id: user.id,
-          }
-        ]);
-
-      if (error) throw error;
-
+      await onTransactionSave(formData);
+      
       toast.success(language === 'ar' ? 'تم إنشاء المعاملة بنجاح' : 'Transaction created successfully');
       
       // Reset form
@@ -125,6 +125,19 @@ const TransactionForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {isLimitReached && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2 text-red-700">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                {language === 'ar' 
+                  ? 'تم الوصول إلى الحد الأقصى للمعاملات' 
+                  : 'Transaction limit reached'}
+              </span>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Seller Information */}
           <div className="space-y-2">
@@ -136,6 +149,7 @@ const TransactionForm = () => {
               value={formData.seller_name}
               onChange={(e) => handleInputChange('seller_name', e.target.value)}
               required
+              disabled={isLimitReached}
             />
           </div>
 
@@ -148,6 +162,7 @@ const TransactionForm = () => {
               type="tel"
               value={formData.seller_phone}
               onChange={(e) => handleInputChange('seller_phone', e.target.value)}
+              disabled={isLimitReached}
             />
           </div>
 
@@ -160,6 +175,7 @@ const TransactionForm = () => {
               type="email"
               value={formData.seller_email}
               onChange={(e) => handleInputChange('seller_email', e.target.value)}
+              disabled={isLimitReached}
             />
           </div>
 
@@ -173,6 +189,7 @@ const TransactionForm = () => {
               value={formData.buyer_name}
               onChange={(e) => handleInputChange('buyer_name', e.target.value)}
               required
+              disabled={isLimitReached}
             />
           </div>
 
@@ -185,6 +202,7 @@ const TransactionForm = () => {
               type="email"
               value={formData.buyer_email}
               onChange={(e) => handleInputChange('buyer_email', e.target.value)}
+              disabled={isLimitReached}
             />
           </div>
 
@@ -198,6 +216,7 @@ const TransactionForm = () => {
               value={formData.brand}
               onChange={(e) => handleInputChange('brand', e.target.value)}
               required
+              disabled={isLimitReached}
             />
           </div>
 
@@ -210,6 +229,7 @@ const TransactionForm = () => {
               value={formData.phone_model}
               onChange={(e) => handleInputChange('phone_model', e.target.value)}
               required
+              disabled={isLimitReached}
             />
           </div>
 
@@ -222,6 +242,7 @@ const TransactionForm = () => {
               value={formData.imei}
               onChange={(e) => handleInputChange('imei', e.target.value)}
               required
+              disabled={isLimitReached}
             />
           </div>
 
@@ -239,6 +260,7 @@ const TransactionForm = () => {
               max={getMaxFutureDate()}
               required
               className={dateError ? 'border-red-500' : ''}
+              disabled={isLimitReached}
             />
             {dateError && (
               <div className="flex items-center gap-2 text-red-500 text-sm">
@@ -265,12 +287,13 @@ const TransactionForm = () => {
               max="5"
               value={formData.rating}
               onChange={(e) => handleInputChange('rating', parseInt(e.target.value))}
+              disabled={isLimitReached}
             />
           </div>
 
           <Button 
             type="submit" 
-            disabled={loading || !!dateError}
+            disabled={loading || !!dateError || isLimitReached}
             className="w-full"
           >
             {loading 
