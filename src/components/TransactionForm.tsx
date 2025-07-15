@@ -33,6 +33,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onTransactionSave, is
   const { language } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [dateError, setDateError] = useState<string>('');
+  const [imeiError, setImeiError] = useState<string>('');
   
   const [formData, setFormData] = useState<TransactionFormData>({
     seller_name: '',
@@ -59,6 +60,29 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onTransactionSave, is
     setFormData(prev => ({ ...prev, purchase_date: date }));
   };
 
+  const handleIMEIChange = (value: string) => {
+    // Allow only numeric characters
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Limit to 15 digits
+    const limitedValue = numericValue.slice(0, 15);
+    
+    // Validate length
+    if (limitedValue.length > 0 && limitedValue.length !== 15) {
+      setImeiError(language === 'ar' ? 'يجب أن يكون رقم IMEI 15 رقماً بالضبط' : 'IMEI must be exactly 15 digits');
+    } else {
+      setImeiError('');
+    }
+    
+    setFormData(prev => ({ ...prev, imei: limitedValue }));
+  };
+
+  const handlePhoneChange = (value: string) => {
+    // Allow only numeric characters
+    const numericValue = value.replace(/[^0-9]/g, '');
+    setFormData(prev => ({ ...prev, seller_phone: numericValue }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -76,6 +100,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onTransactionSave, is
     const dateValidation = validateTransactionDate(new Date(formData.purchase_date));
     if (!dateValidation.isValid) {
       toast.error(dateValidation.error || 'تاريخ غير صحيح');
+      return;
+    }
+
+    // IMEI validation
+    if (formData.imei.length !== 15) {
+      toast.error(language === 'ar' ? 'يجب أن يكون رقم IMEI 15 رقماً بالضبط' : 'IMEI must be exactly 15 digits');
       return;
     }
 
@@ -161,14 +191,15 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onTransactionSave, is
               id="seller_phone"
               type="tel"
               value={formData.seller_phone}
-              onChange={(e) => handleInputChange('seller_phone', e.target.value)}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              placeholder={language === 'ar' ? 'أرقام فقط' : 'Numbers only'}
               disabled={isLimitReached}
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="seller_email">
-              {language === 'ar' ? 'بريد البائع الإلكتروني' : 'Seller Email'}
+              {language === 'ar' ? 'بريد البائع الإلكتروني (اختياري)' : 'Seller Email (Optional)'}
             </Label>
             <Input
               id="seller_email"
@@ -235,15 +266,27 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onTransactionSave, is
 
           <div className="space-y-2">
             <Label htmlFor="imei">
-              {language === 'ar' ? 'رقم IMEI' : 'IMEI Number'}
+              {language === 'ar' ? 'رقم IMEI (15 رقم)' : 'IMEI Number (15 digits)'}
             </Label>
             <Input
               id="imei"
               value={formData.imei}
-              onChange={(e) => handleInputChange('imei', e.target.value)}
+              onChange={(e) => handleIMEIChange(e.target.value)}
+              placeholder="123456789012345"
+              maxLength={15}
               required
+              className={imeiError ? 'border-red-500' : ''}
               disabled={isLimitReached}
             />
+            <div className="text-sm text-muted-foreground">
+              {formData.imei.length}/15 {language === 'ar' ? 'رقم' : 'digits'}
+            </div>
+            {imeiError && (
+              <div className="flex items-center gap-2 text-red-500 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                {imeiError}
+              </div>
+            )}
           </div>
 
           {/* Purchase Date with Validation */}
@@ -293,7 +336,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onTransactionSave, is
 
           <Button 
             type="submit" 
-            disabled={loading || !!dateError || isLimitReached}
+            disabled={loading || !!dateError || !!imeiError || isLimitReached}
             className="w-full"
           >
             {loading 

@@ -1,11 +1,12 @@
+
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 const SUPABASE_URL = "https://ukgvvjardofvelpztguj.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrZ3Z2amFyZG9mdmVscHp0Z3VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwOTg2NDEsImV4cCI6MjA2NTY3NDY0MX0.AEnG5gzgScuOMULX0A0vxw0KEG8t5n0XZazk3i4FNx4";
 
-// Cache for authenticated clients
-const clientCache = new Map<string, SupabaseClient<Database>>();
+// Cache for authenticated clients - using WeakMap to prevent memory leaks
+const clientCache = new WeakMap<object, SupabaseClient<Database>>();
 
 // Default headers for all requests
 const defaultHeaders = {
@@ -15,25 +16,33 @@ const defaultHeaders = {
   'X-Client-Info': 'ghaza-saver/1.0.0'
 };
 
+// Singleton instance for the default client
+let singletonClient: SupabaseClient<Database> | null = null;
+
 // Create the default client with proper configuration
 type Schema = Database['public'];
 
-export const supabase = createClient<Database, 'public', Schema>(
-  SUPABASE_URL, 
-  SUPABASE_PUBLISHABLE_KEY,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      storageKey: 'ghaza-saver-session',
-      storage: window.localStorage
-    },
-    global: {
-      headers: defaultHeaders
-    }
+export const supabase = (() => {
+  if (!singletonClient) {
+    singletonClient = createClient<Database, 'public', Schema>(
+      SUPABASE_URL, 
+      SUPABASE_PUBLISHABLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+          storageKey: 'ghaza-saver-session',
+          storage: window.localStorage
+        },
+        global: {
+          headers: defaultHeaders
+        }
+      }
+    );
   }
-);
+  return singletonClient;
+})();
 
 /**
  * Gets a Supabase client instance, either the default anonymous one
@@ -44,9 +53,12 @@ export const getSupabaseClient = (accessToken?: string): SupabaseClient<Database
   // Return default client if no access token is provided
   if (!accessToken) return supabase;
   
+  // Create a cache key object
+  const cacheKey = { token: accessToken };
+  
   // Return cached client if it exists
-  if (clientCache.has(accessToken)) {
-    return clientCache.get(accessToken)!;
+  if (clientCache.has(cacheKey)) {
+    return clientCache.get(cacheKey)!;
   }
 
   // Create new authenticated client
@@ -68,14 +80,7 @@ export const getSupabaseClient = (accessToken?: string): SupabaseClient<Database
   );
 
   // Cache the client
-  clientCache.set(accessToken, client);
-  
-  // Set up cleanup when the client is no longer needed
-  // This is a simple approach - in a real app, you might want to implement
-  // a more sophisticated cleanup strategy based on token expiration
-  setTimeout(() => {
-    clientCache.delete(accessToken);
-  }, 1000 * 60 * 30); // Clean up after 30 minutes
+  clientCache.set(cacheKey, client);
 
   return client;
 };

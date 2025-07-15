@@ -11,6 +11,7 @@ import Profile from '@/pages/Profile';
 import Transactions from '@/pages/Transactions';
 import Admin from '@/pages/Admin';
 import AdminDashboard from '@/pages/AdminDashboard';
+import AdminSettings from '@/pages/AdminSettings';
 import Terms from '@/pages/Terms';
 import Privacy from '@/pages/Privacy';
 import Disclaimer from '@/pages/Disclaimer';
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/transactions" element={<Transactions />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/settings" element={<AdminSettings />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/disclaimer" element={<Disclaimer />} />
